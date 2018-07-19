@@ -1,0 +1,23 @@
+html, body {
+    background-color: #fff;
+    color: #636b6f;
+    font-family: 'Raleway', sans-serif;
+    font-weight: 100;
+    height: 100vh;
+    margin: 0;
+}
+
+.btn-outline-success:hover, .btn-outline-success:active, .btn-outline-success:visited {
+	background-color: #3AAFA9 !important;
+	border-color: #3AAFA9 !important;
+	color: #ffffff !important;
+}
+
+.btn-outline-success{
+	border-color: #3AAFA9 !important;
+	color: #3AAFA9 !important;
+}
+
+.brand:hover{
+    cursor: pointer;
+}
