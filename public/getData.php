@@ -1,5 +1,5 @@
 <?php	
-	$estTimezone = 'America/New_York';
+	#get chat data url = https://tmi.twitch.tv/group/user/imaqtpie/chatters
 	class Stream{
 		protected $streamId, $start, $end, $viewersOverTime, $period, $freq;
 		protected $estTimezone = 'America/New_York';
@@ -50,6 +50,10 @@
 		function getStreamId(){
 			return $this->streamId;
 		}
+
+		function getDatetime(){
+			return date('m/d/Y h:i:s a', time());
+		}
 	}
 
 	class twitchStream extends Stream{
@@ -60,24 +64,38 @@
 		
 		function __construct($twitchChannel, $freq){
 			parent::__construct($twitchChannel, $freq);
-			$this->apiUrl = "$this->apiUrlBase$twitchChannel?client_id=".$this->twitchClientId;
+			$this->apiUrl = "$this->apiUrlBase$twitchChannel?client_id=$this->twitchClientId";
+		}
+
+		function getStreamTitle(){
+			if(!$this->isOffline()){
+				$res = json_decode(file_get_contents($this->apiUrl), true);
+				return $res['stream']['channel']['status'];
+			}
+			return null;
+		}
+
+		function getStreamGame(){
+			if(!$this->isOffline()){
+				$res = json_decode(file_get_contents($this->apiUrl), true);
+				return $res['stream']['game'];
+			}
+			return null;
 		}
 
 		function getStreamInfo(){
 			//uptime, stream start date, total views of channel, number of followers, language
 			//game that is being streamed
-			$this->isOffline();
-			$json = json_decode(file_get_contents($this->apiUrl), true);
-			$stats = $json['stream'];	
-			$this->game = $stats['game'];
-			$this->streamTitle = $stats['channel']['status'];
-			return array(
-				'createdAt' => $stats['created_at'], 
-				'game' => $this->game,
-				'title' => $this->streamTitle,
-				'followers' => $stats['channel']['followers'], 
-				'totalViews' => $stats['channel']['views']
-				);				
+			if(!$this->isOffline()){
+				$json = json_decode(file_get_contents($this->apiUrl), true);
+				$stats = $json['stream'];	
+				return array(
+					'createdAt' => $stats['created_at'], 
+					'followers' => $stats['channel']['followers'], 
+					'totalViews' => $stats['channel']['views']
+					);		
+			}		
+			return null;
 		}
 
 		function getCurrentViewers(){
@@ -105,13 +123,13 @@
 				if(is_null($timeInMinutes)){
 					$timeInMinutes = 1440;
 				}
-				$this->start = date('m/d/Y h:i:s a', time());
+				$this->start = $this->getDatetime();
 				while($timeInMinutes > 0 && !$this->isOffline()){
-					array_push($this->viewersOverTime, array(date('m/d/Y h:i:s a', time()), $this->getCurrentViewers()));
+					array_push($this->viewersOverTime, array($this->getDatetime(), $this->getCurrentViewers()));
 					sleep($this->freq);
 					$timeInMinutes -= intdiv($this->freq, 60);
 				}	
-				$this->end = date('m/d/Y h:i:s a', time());	
+				$this->end = $this->getDatetime();
 			}			
 		}
 	}
@@ -141,9 +159,13 @@
 		function getStreamTitle(){
 			//get youtube stream title, channel name, num subscribers
 			#need video id of live video i think
-			$res = file_get_contents("$this->channelInfoUrl$this->channelId&key=$this->apiKey");
-			$this->streamTitle = $res['items']['snippet']['title'];
-			return $this->streamTitle;
+			if(!$this->isOffline()){
+				if($this->videoId == null){
+					$res = json_decode(file_get_contents("$this->channelInfoUrl$this->channelId&key=$this->apiKey"), true);
+				}
+				return json_encode($res['items'][0]['snippet']['title']);
+			}
+			return null;
 		}
 
 		function getChannelName(){
@@ -162,8 +184,14 @@
 		}
 
 		function isOffline(){
-			$json = json_decode(file_get_contents($this->apiUrl), true);
-			return empty($json['items']);
+			if($this->apiUrl != null){
+				$res = json_decode(file_get_contents($this->apiUrl), true);
+				return empty($res['items']);
+			}
+			else{
+				$res = json_decode(file_get_contents("$this->videoInfoUrl$this->videoId&key=$this->apiKey"), true);
+				return $res['items'][0]['snippet']['liveBroadcastContent'] == 'none';
+			}
 		}
 
 		//api key has rate limit of 1m calls per day, need to check if limit is reached
@@ -173,15 +201,14 @@
 		}
 
 		function getCurrentViewers(){
-			if($this->apiUrl != null){
-				$json = json_decode(file_get_contents($this->apiUrl), true);
-				$video = $json['items'][0]['id']['videoId'];
-		    	return (int)file_get_contents("https://www.youtube.com/live_stats?v=$video");				
+			if($this->isOffline()){
+				return 0;
 			}
-			else if($this->videoId != null){
-		    	return (int)file_get_contents("https://www.youtube.com/live_stats?v=$this->videoId");				
+			if($this->videoId == null){
+				$res = json_decode(file_get_contents($this->apiUrl), true);
+				$this->videoId = $res['items'][0]['id']['videoId'];
 			}
-		    return 0;		
+		    return (int)file_get_contents("https://www.youtube.com/live_stats?v=$this->videoId");					
 		}
 
 		function trackViewership($timeInMinutes){
@@ -191,24 +218,26 @@
 				if(is_null($timeInMinutes)){
 					$timeInMinutes = 1440;
 				}
-				$this->start = date('m/d/Y h:i:s a', time());
+				$this->start = $this->getDatetime();
 				while($timeInMinutes > 0 and !$this->isOffline() and !$this->rateLimited()){
-					array_push($this->viewersOverTime, array(date('m/d/Y h:i:s a', time()), $this->getCurrentViewers()));
+					array_push($this->viewersOverTime, array($this->getDatetime(), $this->getCurrentViewers()));
 					sleep($this->freq);
 					$timeInMinutes -= intdiv($this->freq, 60);
 				}
-				$this->end = date('m/d/Y h:i:s a', time());	
+				$this->end = $this->getDatetime();
 			}
 		}
 	}
 
 	function getTotalViewership($channels, $game, $duration){
+		$estTimezone = 'America/New_York';
+		date_default_timezone_set($estTimezone);
 		$twitchStreamsArr = array();
 		$youtubeStreamsArr = array();
 		
 		for($i = 0; $i < count($channels[0]); $i++){
 			$twitchStream =  new twitchStream($channels[0][$i], null);
-			if(stripos($twitchStream->getStreamInfo()['title'], 'lcs') !== false && !$twitchStream->isOffline()){
+			if(stripos($twitchStream->getStreamTitle(), 'lcs') !== false && !$twitchStream->isOffline()){
 				array_push($twitchStreamsArr, $twitchStream);
 			}
 		}
@@ -311,6 +340,8 @@
 	#getTotalViewership($_lcsChannels, 'LOL', 300);
 
 	function getChannelViewership($channel){
+		$estTimezone = 'America/New_York';
+		date_default_timezone_set($estTimezone);
 		$viewers_arr = array(date('m/d/Y h:i:s a',  time()));
 		for($i = 0; $i < count($channel); $i++){
 			//echo stripos($channel[$i], 'www.youtube.com/');
@@ -338,7 +369,7 @@
 		echo json_encode($viewers_arr);
 	}
 	
-	function getEsportsViewership($event, $apiKeys){
+	function getEsportsViewership($event){
 		$_lolesportsChannelId = 'UCvqRdlKsE5Q8mf8YXbdIJLw';
 		$_lcsChannels = array(array('riotgames', 'summonersinnlive', 'ogaminglol', 'lvpes', 'Nervarien', 'pg_esports'), array($_lolesportsChannelId)); 
 		$_lckChannels = array(array('lck1', 'lck_korea'), array($_lolesportsChannelId));
@@ -365,13 +396,12 @@
 	if(isset($_POST['action']) && !empty($_POST['action'])) {
 	    $action = $_POST['action'];
 	    #echo $action;
-		$apiKeys = include($_SERVER['DOCUMENT_ROOT'].'/../config/api.php');
 		$res = json_decode($action);
 		if(json_last_error() === 0){
-			getEsportsViewership($res, $apiKeys);
+			getEsportsViewership($res);
 		}
 		else{
-	    	getEsportsViewership($action, $apiKeys);
+	    	getEsportsViewership($action);
 		}
 	}
 

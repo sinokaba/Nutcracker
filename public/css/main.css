@@ -21,3 +21,11 @@ html, body {
 .brand:hover{
     cursor: pointer;
 }
+
+.hide{
+    display: none;
+}
+
+.stream-title{
+    cursor: pointer;
+}

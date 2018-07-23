@@ -17,6 +17,8 @@ Route::get('/trackViewership', 'ViewershipTrackerController@index');
 Route::get('/trackViewership/{id}', 'ViewershipTrackerController@show');
 Route::post('/trackViewership/addChannel', 'ViewershipTrackerController@addChannel');
 
+Route::post('/getViewershipStats', 'ApiCallsController@getStats');
+Route::post('/getYoutubeName', 'ApiCallsController@getYoutubeInfo');
 
 Route::resource('esportsViewers', 'EsportsController');
 ?>

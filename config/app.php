@@ -16,6 +16,14 @@ return [
     'name' => env('APP_NAME', 'Nutcracker'),
 
 
+    #api keys for youtube and twitch used to gather stream channel data
+    'twitch_client_id' => 'ud3fxi21z72s0dq3e3u55yh4fnjuq0',
+    'twitch_secret' => 's22em0dfi04zrddq1pbotl8lytxeb2',
+
+    #youtube api key
+    'youtube_api_key' => 'AIzaSyDLc4ppSH3_VauvHUjqHyJ9e0eTFsOLVDU',
+
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment
