@@ -2,52 +2,63 @@
 
 namespace App;
 
-class TwitchStream extends Stream{
-	private $twitchClientId;# = 'ud3fxi21z72s0dq3e3u55yh4fnjuq0';
-	private $secret = 's22em0dfi04zrddq1pbotl8lytxeb2';
-	private $apiUrlBase = 'https://api.twitch.tv/kraken/streams/';
-	private $apiUrl, $channel;
+class TwitchStream extends Livestream{
+	private $twitchClientId;
+	private $urlBase = 'https://api.twitch.tv/kraken/streams/';
 	
-	function __construct($twitchChannel, $freq){
-		parent::__construct($twitchChannel, $freq);
+	function __construct($twitchChannel, $freq = null){
+		parent::__construct($freq);
 		$this->twitchClientId = config('app.twitch_client_id');
-		$this->channel = $twitchChannel;
-		$this->apiUrl = "$this->apiUrlBase$twitchChannel?client_id=$this->twitchClientId";
+		$this->channelName = $twitchChannel;
+	}
+
+	function getStreamDetails($channel = null){
+		$params = array(
+			'client_id' => $this->twitchClientId
+		);
+		$chan = $channel == null ? $this->channelName : $channel;
+		$res = json_decode(file_get_contents($this->urlBase . $chan . '?' . http_build_query($params)), true);
+		return $res['stream'];	
+	}
+
+	function getTopLivestreams(){
+		return json_decode(file_get_contents($this->urlBase.'?client_id='.$this->twitchClientId), true);
+	}
+
+	function getNumChatters(){
+		return json_decode(file_get_contents('https://tmi.twitch.tv/group/user/' . $this->channelName . '/chatters'), true);
 	}
 
 	function getStreamTitle(){
 		if(!$this->isOffline()){
-			$res = json_decode(file_get_contents($this->apiUrl), true);
-			return $res['stream']['channel']['status'];
+			$res = $this->getStreamDetails();
+			return $res['channel']['status'];
 		}
 		return null;
 	}
 
-	function getChannelName(){
-		return $this->channel;
-	}
-
 	function getStreamGame(){
 		if(!$this->isOffline()){
-			$res = json_decode(file_get_contents($this->apiUrl), true);
-			return $res['stream']['game'];
+			$res = $this->getStreamDetails();
+			return $res['game'];
 		}
 		return null;
 	}
 
 	function getStreamInfo(){
-		//uptime, stream start date, total views of channel, number of followers, language
-		//game that is being streamed
 		if(!$this->isOffline()){
-			$json = json_decode(file_get_contents($this->apiUrl), true);
-			$stats = $json['stream'];	
+			$stats = $this->getStreamDetails();
 			return array(
-				'channel' => $this->getChannelName(),
+				'channel' => $stats['channel']['name'],
 				'cat' => $stats['game'],
 				'title' => $stats['channel']['status'],
-				'createdAt' => $stats['created_at'], 
+				'createdAt' => strtotime($stats['created_at']), 
 				'followers' => $stats['channel']['followers'], 
-				'totalViews' => $stats['channel']['views']
+				'totalViews' => $stats['channel']['views'],
+				'channelCreation' => $stats['channel']['created_at'],
+				'channelId' => $stats['channel']['_id'],
+				'platform' => 'Twitch',
+				'chatters' => $this->getNumChatters()['chatter_count']
 				);		
 		}		
 		return null;
@@ -55,16 +66,14 @@ class TwitchStream extends Stream{
 
 	function getCurrentViewers(){
 		if($this->isOffline()){
-			return 0;
+			return -1;
 		}
-		$json = json_decode(file_get_contents($this->apiUrl), true);
-		$stats = $json['stream'];
+		$stats = $this->getStreamDetails();
 		return $stats['viewers'];
 	}
 
 	function isOffline(){
-		$json = json_decode(file_get_contents($this->apiUrl), true);
-		$stats = $json['stream'];
+		$stats = $this->getStreamDetails();
 		if(is_null($stats)){
 			$this->offline = true;
 		}
@@ -74,6 +83,7 @@ class TwitchStream extends Stream{
 		return $this->offline;				
 	}
 
+	//tracks viewership of a channel for a specified amount of time in minutes
 	function trackViewership($timeInMinutes){
 		$this->getStreamInfo();
 		if(!$this->offline){

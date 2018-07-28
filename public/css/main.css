@@ -1,13 +1,8 @@
-html, body {
+html, body{
     background-color: #fff;
-    color: #636b6f;
-    font-family: 'Raleway', sans-serif;
-    font-weight: 100;
-    height: 100vh;
-    margin: 0;
 }
 
-.btn-outline-success:hover, .btn-outline-success:active, .btn-outline-success:visited {
+.btn-outline-success:hover, .btn-outline-success:active, .btn-outline-success:visited{
 	background-color: #3AAFA9 !important;
 	border-color: #3AAFA9 !important;
 	color: #ffffff !important;
@@ -28,4 +23,27 @@ html, body {
 
 .stream-title{
     cursor: pointer;
+}
+
+.popover{
+    width: 100% !important;
+}
+
+.card-img-top{
+    width: 100%;
+    height: 15vw;
+    object-fit: cover;
+}
+
+.hideOverflow{
+    display: block;
+    display: -webkit-box;
+    max-width: 400px;
+    height: 50px;
+    margin: 0 auto;
+    line-height: 1.2;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }

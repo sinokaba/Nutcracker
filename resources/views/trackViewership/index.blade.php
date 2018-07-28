@@ -1,7 +1,7 @@
 @extends('layout')
 
 @section('customJs')
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.5/jspdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-sortable/0.9.13/jquery-sortable-min.js"></script>
 @stop
 
 @section('content')
@@ -30,14 +30,17 @@
 	<div class="row">
 		<div class="col-md-8">
 		    <h2 id="status"></h2>
-		    <div id="curve_chart" style="width: 100%; height: 65vh"></div>
+		    <div id="curve_chart" style="width: 100%; height: 70vh"></div>
 			<button id="saveChart" type="button" class="hide btn btn-success">Save as PDF</button>
 		</div>
-		<div class="col-md-4">
+		<div class="col-md-4 hide" id="sideContent">
           <h4 class="d-flex justify-content-between align-items-center mb-3">
-            <h3>Additional Stats</h3>
+            <h3>
+            	Additional Stats
+            	<span class="octicon octicon-graph"></span>
+            </h3>
           </h4>
-          <ul class="list-group mb-3" id="sideContent">
+          <ul class="list-group mb-3" id="streamerStats">
             <li class="list-group-item d-flex justify-content-between lh-condensed">
               <div>
                 <h5 class="my-0">Total Viewers</h5>
@@ -53,6 +56,7 @@
               <strong id="uptime">0m</strong>
             </li>
           </ul>
+		<button id="endTracking" type="button" class="hide btn btn-danger">Stop</button>
 		</div>
 	</div>
 </div>
@@ -60,7 +64,8 @@
 <script>
 	var popoverSettings = {
 							html: true,
-							content: function() {
+							container: 'body',
+							content: function(){
 								var popoverId = (this.id).split('-');
 								console.log(popoverId);
 								return $("#popover-content-" + popoverId[1]).html();
@@ -79,10 +84,12 @@
     // Fetch all the forms we want to apply custom Bootstrap validation styles to
     var forms = document.getElementsByClassName('needs-validation');
     var channels = [];
-    var numDataPoints = [];
+    //var numDataPoints = [];
     var youtubeRe = /^(https:\/\/www.youtube.com\/)[\w\-\._~:/?#[\]@!\$&\(\)\*\+,;=.]+$/g;
     var twitchRe = /^[a-zA-Z0-9_]{4,25}$/;
     var start, now;
+    var setup = false;
+    var maxChannels = 7;
 	//need to check if channels exist
 
     function updateTime(){
@@ -113,13 +120,12 @@
 		    	alert("Invalid Youtube URL");	    		
 	    	}
 		    else{
-	    		if(channels.length >= 5){
+	    		if(channels.length >= maxChannels){
 	    			$(formId).prop('disabled', true);
 	    			alert("Max number of channels to track reached.");
 	    		}
 	    		else{
 		    		channels.push($(formId).serializeArray()[0]["value"]);
-		    		numDataPoints.push(0);
 		    		//console.log(channels);
 			    	$(formId)[0].classList.add('was-validated');
 			    	if(channels.length == 1){
@@ -128,7 +134,7 @@
    						setInterval(updateTime, 1000 * 60);
 			    	}	
 			    	else{
-				    	updateCols();
+				    	getData();
 			    	}
 			    	$(formId).val("");
 	    		}
@@ -136,13 +142,32 @@
 	    }   	
     }
 
-  	$("#addTWChannel").on('click', function(event) {
+  	$("#addTWChannel").on('click', function(event){
 	  	checkInput("#twitchChannel", 0, event);
   	});
     
-    $("#addYTChannel").on('click', function(event) {
+    $("#addYTChannel").on('click', function(event){
 	  	checkInput("#youtubeChannel", 1, event);
   	});
+
+    $("#endTracking").on('click', function(){
+    	if($("#endTracking").text() == "Stop"){
+	    	if(intervalSet){
+	    		clearInterval(update);
+	    		intervalSet = false;
+	    	}
+	    	$("#endTracking").html("Start");
+	    	$("#endTracking").removeClass("btn-danger").addClass("btn-success");
+    	}
+    	else{
+    		if(!intervalSet){
+				update = setInterval(getData, 1000 * 60); 
+    			intervalSet = true;
+    		}
+	    	$("#endTracking").html("Stop");
+	    	$("#endTracking").removeClass("btn-success").addClass("btn-danger");
+    	}
+    });
 
 	var chartData, chart, update;
 	var intervalSet = false;
@@ -152,15 +177,11 @@
 		hAxis: {title: "Time", textPosition: "none"},
 		legend: "bottom"
 	};
+
 	function initTable(){
 		chartData = new google.visualization.DataTable();
 		chartData.addColumn('string', 'Time');
-		updateCols();
-		update = setInterval(getData, 1000 * 60); 
-		intervalSet = true;    
-		if($("#status").innerHTML != "Offline"){
-    		$("#saveChart").removeClass("hide");
-		}
+		getData(); 
 	}
 
 	function drawChart() {
@@ -177,74 +198,107 @@
 		pdf.save(channels + "_viewership_" + date + ".pdf");
 	});
 
+	//contains the channels added as key, and their category as value
 	var addedChannelsObj = {};
-	var totalChanViewership = {};
+	//contains the number of times viewership for a channel was tracked, the peak viewership, and total viewership
+	var streamViewership = {};
+	//contains the exact datetime when a channel initally launches a stream
+	var streamCreationTime = {};
+
+	function formatDate(date){
+		var hours = date.getHours();
+		var minutes = date.getMinutes();
+		var ampm = hours >= 12 ? 'pm' : 'am';
+		hours = hours % 12;
+		hours = hours ? hours : 12; // the hour '0' should be '12'
+		minutes = minutes < 10 ? '0'+minutes : minutes;
+		var strTime = hours + ':' + minutes + ' ' + ampm;
+		return date.getMonth()+1 + "/" + date.getDate() + "/" + date.getFullYear() + " " + strTime;
+	}
 
 	function getData(){
 	  //console.log("called");
 		console.log(chartData.getNumberOfColumns());		
 		var jsonData = $.ajax({
 			url: "/getViewershipStats",
-			data: {channels: channels, numDataRec: numDataPoints, added: addedChannelsObj},
+			data: {channels: channels, viewership: streamViewership, added: addedChannelsObj},
 			method: "POST",
 			dataType:"JSON",
 			success: function(res) {
 				console.log(typeof(res));
-				console.log(res[0]);
-				console.log(res[1]);
-				var viewershipSum = 0;
+				console.log(res);
+				var d = new Date(0); // The 0 there is the key, which sets the date to the epoch
+				d.setUTCSeconds(res[0][0]);
+				//console.log(res[1]);
+				var dataToAdd = [formatDate(d)];
+				var viewershipSum = -1;
+				streamViewership = res[2];
+				console.log(streamViewership);
 				for(var i = 1; i < res[0].length; i++){
-					viewershipSum += res[0][i];
-					c = channels[i-1];
-					chanInfo = res[1][c];
-					if(!(c in totalChanViewership)){
-						totalChanViewership[c] = res[0][i];
+					var channelViewers = res[0][i];
+					var c = channels[i-1];
+					if(channelViewers >= 0){
+						viewershipSum += channelViewers;
+				  		if(streamViewership === null){
+				  			streamViewership = {};
+							streamViewership[c] = [channelViewers, channelViewers, 1, false];
+						}
+						else if(!(c in streamViewership)){
+							streamViewership[c] = [channelViewers, channelViewers, 1, false];			
+						}
+						else{
+							streamViewership[c][0] += channelViewers;
+							streamViewership[c][2] += 1;
+							if(channelViewers > streamViewership[c][1]){
+								streamViewership[c][1] = channelViewers;
+							}
+						}
+					}
+					if(res[1][channels[i-1]] != null){
+						updateStreamInfo(res, res[1][c], c, i);
+						dataToAdd.push(res[0][i])
 					}
 					else{
-						totalChanViewership[c] += res[0][i];
+						if(channelViewers >= 0){
+							dataToAdd.push(res[0][i]);
+						}
+						else{
+							console.log("channels before: " + channels);
+							if(channels.length == 1){
+								endTracking();
+							}
+							else{
+								$("#streamer-" + (i-1)).html(c + ' offline').removeClass('text-success').addClass('text-danger');
+								channels.splice(i - 1, 1);
+								if((channels.length + 1) < chartData.getNumberOfColumns()){
+									chartData.removeColumn(i);
+								}
+							}
+							console.log("channels after: " + channels);
+						}
 					}
-					if(!(c in addedChannelsObj)){
-						var liHTML = "<li class='list-group-item d-flex justify-content-between lh-condensed'>"
-						             +"<div><h5 class='my-0 stream-title text-success' id='streamer-"+ (i-1) +"' data-container='body' data-toggle='popover' data-placement='left'>"
-									 +chanInfo['channel']+"</h5><ul class='list-group mb-3' id='popover-content-"+ (i-1) +"' style='display: none'>"
-								     +"<li class='list-group-item d-flex justify-content-between'><div><strong class='my-0 success'>Start</strong>"
-								     +"</div><span class='text-muted' id='startDate-"+(i-1)+"'>"+chanInfo['createdAt']+"</span></li><li"
-								     +" class='list-group-item d-flex justify-content-between'><div><strong class='my-0 success'>Total Followers"
-								     +"</strong></div><span class='text-muted' id='totalFollowers-"+(i-1)+"'>"+chanInfo['followers']+"</span>"
-								     +"</li><li class='list-group-item d-flex justify-content-between'><div><strong class='my-0 success'>Total Views</strong>"
-								     +"</div><span class='text-muted' id='totalViews-"+(i-1)+"'>"+chanInfo['totalViews']+"</span></li></ul>"
-								     +"<small id='stream-cat-'"+(i-1)+" class='text-muted'>"+chanInfo['cat']+"</small></div><strong id='stream-viewers-"+(i-1)+"'></strong></li>";
-			            addedChannelsObj[c] = chanInfo['cat'];
-			            $("#sideContent").append(liHTML);
-			            $("#streamer-" + (i-1)).popover(popoverSettings);
-			            chartData.addColumn('number', res[1][c]['channel']);
-					}
-					else if(c in res[1]){
-						$("#totalViews-" + (i-1)).html(chanInfo['totalViews']);
-						$("#stream-cat-" + (i-1)).html(chanInfo['cat']);
-					}
-					$("#stream-viewers-"+(i-1)).html(Math.floor(totalChanViewership[c]/(numDataPoints[i-1] + 1)) + " Avg Viewers");
+					var now = new Date(0);
+					var uptime = Math.floor((((new Date()).getTime()/1000)  - streamCreationTime[c])/60);
+					$("#uptime-" + (i-1)).html(uptime + " minutes");
+					$("#stream-viewers-"+(i-1)).html(Math.floor(streamViewership[c][0]/streamViewership[c][2]) + " Avg Viewers");
 				}
-				if(viewershipSum <= 0 && intervalSet){
-				  $("#status").html("Offline");                        
-				  clearInterval(update);
-				  //$("#saveChart").addClass("hide");
-				  intervalSet = false;
+				if(viewershipSum < 0){
+				  endTracking();
 				}
 				else{
-				  $("#status").html("Live");                        
-				  chartData.addRow(res[0]);
-				  chart.draw(chartData, options);
-				  $("#totalViewers").html(viewershipSum);
-				  
-				  for(var i = 0; i < numDataPoints.length; i++){
-				  	numDataPoints[i]++;
-				  }
-				  
-				  if(!intervalSet){
-				  	intervalSet = true;
-					setInterval(update)
-				  }
+					if(!setup){
+						startTracking();
+					}
+					console.log(dataToAdd);
+					$("#status").html("Live");                        
+					chartData.addRow(dataToAdd);
+					$("#totalViewers").html(viewershipSum);
+
+					if(!intervalSet){
+						intervalSet = true;
+						update = setInterval(getData, 1000 * 60); 
+					}
+					drawChart();
 				}
 			},
 			error: function(XMLHttpRequest, textStatus, errorThrown) { 
@@ -261,37 +315,82 @@
 		});
   	}
 
-  	function updateCols(){
-  		/*
-  		if(channels[channels.length - 1].indexOf("youtube") !== -1){
-	  		var youtubeChanName;
-	  		if(channels[channels.length - 1].indexOf("youtube.com/user/") !== -1){
-	  			youtubeChanName = channels[channels.length - 1].substring(channels[channels.length - 1].indexOf("youtube.com/user/"));
-	  		}
-	  		else{
-		  		var jsonData = $.ajax({
-					url: "/getYoutubeName",
-					data: {youtube_channel: channels[channels.length - 1]},
-					method: 'POST',
-					success: function(res) {
-						console.log(typeof(res) + " res text: " + res);
-						chartData.addColumn('string', res);
-					},
-					error: function(XMLHttpRequest, textStatus, errorThrown) { 
-						console.log(typeof(XMLHttpRequest.responseText) + " " + XMLHttpRequest.responseText + "\n");
-						console.log("Error: " + errorThrown); 
-					}     
-				});
-	  		}
-			//chartData.addColumn('number', youtubeChanName + ' Viewers');
-  		}
-  		else{
-			console.log(channels + " adding: " + channels[channels.length - 1]);
-			chartData.addColumn('string', channels[channels.length - 1]);
-  		}
-  		*/
-  		getData();
-		drawChart();
+  	function startTracking(){
+		$("#endTracking").removeClass("hide");
+		$("#sideContent").removeClass("hide");
+		$("#saveChart").toggleClass("hide");
+		$("#status").html("Online");                        
+		setup = true;
+		update = setInterval(getData, 1000 * 60); 
+		intervalSet = true;   
   	}
+
+  	function endTracking(){
+		channels = [];
+		//$("#endTracking").addClass("hide");
+		//$("#sideContent").addClass("hide");
+    	$("#saveChart").toggleClass("hide");
+		$("#status").html("Offline");                        
+    	setup = false;
+		clearInterval(update);
+		//$("#saveChart").addClass("hide");
+		intervalSet = false;
+		if(chartData.getNumberOfRows() <= 1){
+			clearSideContent();
+		}
+  	}
+
+  	function clearSideContent(){
+		$("#endTracking").addClass("hide");
+		$("#sideContent").addClass("hide");
+		var myNode = document.getElementById("streamerStats");
+		var children = myNode.children;
+		while(children.length > 2){
+			myNode.removeChild(children[2]);
+		}
+  	}
+
+  	function updateStreamInfo(response, chanInfo, c, i){
+		if(!(c in addedChannelsObj)){
+			var now = new Date(0);
+			console.log(chanInfo['createdAt']);
+			now.setUTCSeconds(chanInfo['createdAt']);
+			streamCreationTime[c] = chanInfo['createdAt'];
+			var liHTML = "<li class='list-group-item d-flex justify-content-between lh-condensed'>"
+			             +"<div><h5 class='my-0 stream-title text-success' id='streamer-"+(i-1)+"' data-container='body'" 
+			             +"data-toggle='popover' data-placement='left' title='"+chanInfo['title']+"'>"+chanInfo['channel']+"</h5>"
+						 +"<ul class='list-group' id='popover-content-"+(i-1)+"' style='display: none'>"
+					     +"<li class='list-group-item d-flex justify-content-between'>"
+					     +"<div><strong class='my-0 success'>Start</strong></div>"
+					     +"<span class='text-muted' id='startDate-"+(i-1)+"'>"+formatDate(now)+"</span></li>"
+					     +"<li class='list-group-item d-flex justify-content-between'>"
+					     +"<div><strong class='my-0 success'># Chatters</strong></div>"
+					     +"<span class='text-muted' id='numChatters-"+(i-1)+"'>"+chanInfo['chatters']+"</span></li>"					     
+					     +"<li class='list-group-item d-flex justify-content-between'>"
+					     +"<div><strong class='my-0 success'>Uptime</strong></div>"
+					     +"<span class='text-muted' id='uptime-"+(i-1)+"'></span></li>"
+					     +"<li class='list-group-item d-flex justify-content-between'>"
+					     +"<div><strong class='my-0 success'>Total Followers</strong></div>"
+					     +"<span class='text-muted' id='totalFollowers-"+(i-1)+"'>"+chanInfo['followers']+"</span></li>"
+					     +"<li class='list-group-item d-flex justify-content-between'>"
+					     +"<div><strong class='my-0 success'>Total Views</strong></div>"
+					     +"<span class='text-muted' id='totalViews-"+(i-1)+"'>"+chanInfo['totalViews']+"</span></li>"
+						 +"<li class='list-group-item d-flex justify-content-between'>"
+						 +"<div><strong class='my-0 success'>Platform</strong></div>"
+						 +"<span class='text-muted' id='platform-"+(i-1)+"'>"+chanInfo['platform']+"</span></li></ul>"
+					     +"<small id='stream-cat-"+(i-1)+"' class='text-muted'>"+chanInfo['cat']+"</small></div>"
+					     +"<strong id='stream-viewers-"+(i-1)+"'></strong></li>";
+            addedChannelsObj[c] = chanInfo['cat'];
+            $("#streamerStats").append(liHTML);
+            $("#streamer-" + (i-1)).popover(popoverSettings);
+            chartData.addColumn('number', response[1][c]['channel']);
+		}
+		else if(c in response[1]){
+			$("#totalViews-" + (i-1)).html(chanInfo['totalViews']);
+			$("#stream-cat-" + (i-1)).html(chanInfo['cat']);
+			$("#title-" + (i-1)).html(chanInfo['title']);
+		}
+  	}
+
 </script>
 @stop

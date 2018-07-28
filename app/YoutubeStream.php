@@ -2,102 +2,159 @@
 
 namespace App;
 
-class youtubeStream extends Stream{
-	private $apiKey;# = 'AIzaSyDLc4ppSH3_VauvHUjqHyJ9e0eTFsOLVDU';
-	private $liveViewersUrl = 'https://www.youtube.com/live_stats?v=';
-	private $apiUrl, $urlBase = 'https://www.googleapis.com/youtube/v3/';
-	private $liveInfoUrl = 'search?part=snippet&channelId=';
-	private $channelInfoUrl = 'channels?part=snippet,statistics&id=';
-	private $videoInfoUrl = 'videos?part=snippet&id=';
+class youtubeStream extends Livestream{
+	private $apiKey, $rateLimitReached;
 	private $channelId, $videoId, $categories;
-	public $channelName;
+	public $APIs = array(
+		'categories' => 'https://www.googleapis.com/youtube/v3/videoCategories?',
+		'videos' => 'https://www.googleapis.com/youtube/v3/videos?',
+		'search' => 'https://www.googleapis.com/youtube/v3/search?',
+		'channels' => 'https://www.googleapis.com/youtube/v3/channels?',
+		'playlists' => 'https://www.googleapis.com/youtube/v3/playlists?',
+		'playlistItems' => 'https://www.googleapis.com/youtube/v3/playlistItems?',
+		'activities' => 'https://www.googleapis.com/youtube/v3/activities?',
+		'live.viewers' => 'https://www.youtube.com/live_stats?v=',
+    );
+	private $channelInfoUrl = 'channels?part=snippet,statistics&id=';
+	private $streamInfoUrl = 'videos?part=snippet%2CliveStreamingDetails&id=';
 
-	function __construct($youtubeChannel, $video, $freq, $game){
-		parent::__construct($youtubeChannel, $freq);
-		$this->game = $game;
-		$this->channelId = $youtubeChannel;
-		$this->apiKey = config('app.youtube_api_key');
+	function __construct($youtubeChannel, $video = null, $freq = null){
+		parent::__construct($freq);
+		$this->setApiKey(config('app.youtube_api_key'));
 		if($youtubeChannel == null){
 			$this->videoId = $video;
-			$this->videoInfoUrl = "$this->urlBase$this->videoInfoUrl$this->videoId&key=$this->apiKey";
-			$this->channelId = json_decode(file_get_contents($this->videoInfoUrl), true)['items'][0]['snippet']['channelId'];
 		}
 		else{
-			$this->channelId = $youtubeChannel;
-			$this->apiUrl = "$this->urlBase$this->liveInfoUrl$youtubeChannel&eventType=live&type=video&key=$this->apiKey";
-			$this->videoId = json_decode(file_get_contents($this->apiUrl), true)['items'][0]['id']['videoId'];
+			$liveChanInfo = $this->getLiveVideoByChannel($youtubeChannel);
+			$this->videoId = $liveChanInfo[0]['id']['videoId'];
 		}
-		$this->categories = json_decode(file_get_contents($this->urlBase."videoCategories?part=snippet&regionCode=US&key=$this->apiKey"), true)['items'];
+		if($this->videoId !== null){
+			$liveVideoInfo = $this->getLivestreamDetails($this->videoId);
+			$this->channelId = $liveVideoInfo[0]['snippet']['channelId'];
+			$this->channelName = $liveVideoInfo[0]['snippet']['channelTitle'];
+		}
+		$this->categories = $this->getVideosCategory();
 	}
 
-	function getApiKey(){
-		return $this->apiKey;
+	function getVideosCategory(){
+		$params = array(
+			'part' => 'snippet',
+			'regionCode' => 'US',
+			'key' => $this->apiKey
+		);
+		return $this->getApiResponse($this->APIs['categories'], $params, true);
+	}
+
+	function getTopLivestreams($max = 30){
+		$params = array(
+			'part' => 'snippet',
+			'eventType' => 'live',
+			'type' => 'video',
+			'getVideosCategory' => '20',
+			'maxResults' => $max,
+			'order' => 'viewcount',
+			'key' => $this->apiKey
+		);
+		return $this->getApiResponse($this->APIs['search'], $params);
+	}
+
+	function getChannelDetails($channel = null){
+		$chan = $channel === null ? $this->channelId : $channel; 
+		$params = array(
+			'part' => 'snippet,statistics',
+			'id' => $chan,
+			'key' => $this->apiKey
+		);
+		return $this->getApiResponse($this->APIs['channels'], $params);
+	}
+
+	function getLivestreamDetails($liveVideo){
+		$params = array(
+			'part' => 'snippet,liveStreamingDetails',
+			'id' => $liveVideo,
+			'key' => $this->apiKey
+		);
+		return $this->getApiResponse($this->APIs['videos'], $params);
+	}
+
+	function getLiveVideoByChannel($chan){
+		$params = array(
+			'part' => 'snippet',
+			'channelId' => $chan,
+			'eventType' => 'live',
+			'type' => 'video',
+			'key' => $this->apiKey
+		);
+		return $this->getApiResponse($this->APIs['search'], $params);
+	}
+
+	function getApiResponse($api, $params, $cat = false){
+		$result = json_decode(file_get_contents($api . http_build_query($params)), true);
+		if(!$cat && $result['pageInfo']['totalResults'] === 0){
+			return null;
+		}
+		return $result['items'];
+	}
+
+	function setApiKey($key){
+		$this->apiKey = $key;
 	}
 
 	function getStreamTitle(){
-		//get youtube stream title, channel name, num subscribers
-		#need video id of live video i think
 		if(!$this->isOffline()){
-			$res = json_decode(file_get_contents($this->videoInfoUrl), true);
-			return json_encode($res['items'][0]['snippet']['title']);
+			$res = $this->getLivestreamDetails($this->videoId);
+			return json_encode($res[0]['snippet']['title']);
 		}
 		return null;
 	}
 
-	function getChannelName(){
-		if($this->isOffline()){
-			return null;
-		}
-		$res = json_decode(file_get_contents($this->videoInfoUrl), true);
-		return $res['items'][0]['snippet']['channelTitle'];
-	}
-
 	function getStreamInfo(){
-		$channelStats = json_decode(file_get_contents("$this->urlBase$this->channelInfoUrl$this->channelId&key=$this->apiKey"), true);
-		$livestreamInfo = json_decode(file_get_contents($this->videoInfoUrl), true);
-		$category = null;
+		#$channelStats = json_decode(file_get_contents($this->ytUrlBase.$this->channelInfoUrl.$this->channelId.'&key='.$this->apiKey), true);
+		$channelStats = $this->getChannelDetails()[0];
+		$livestreamInfo = $this->getLivestreamDetails($this->videoId);
+		$this->game = null;
+		$streamInfo = $livestreamInfo[0]['snippet'];
 		for($i = 0; $i < count($this->categories); $i++){
-			if($this->categories[$i]['id'] == $livestreamInfo['items'][0]['snippet']['categoryId']){
-				$category = $this->categories[$i]['snippet']['title'];
+			if($this->categories[$i]['id'] == $streamInfo['categoryId']){
+				$this->game = $this->categories[$i]['snippet']['title'];
 			}
 		}
 		return array(
-				'channel' => $channelStats['items'][0]['snippet']['title'],
-				'cat' => $category,
-				'title' => $livestreamInfo['items'][0]['snippet']['title'],
-				'createdAt' => $livestreamInfo['items'][0]['snippet']['publishedAt'],
-				'followers' => $channelStats['items'][0]['statistics']['subscriberCount'],
-				'totalViews' => $channelStats['items'][0]['statistics']['viewCount']
-				);
+			'channel' => $channelStats['snippet']['title'],
+			'cat' => $this->game,
+			'title' => $streamInfo['title'],
+			'createdAt' => strtotime($livestreamInfo[0]['liveStreamingDetails']['actualStartTime']),
+			'followers' => $channelStats['statistics']['subscriberCount'],
+			'totalViews' => $channelStats['statistics']['viewCount'],
+			'channelCreation' => $channelStats['snippet']['publishedAt'],
+			'channelId' => $this->channelId,
+			'platform' => 'Youtube',
+			'chatters' => null
+		);
 	}
 
-	function isOffline(){
-		$res = json_decode(file_get_contents($this->videoInfoUrl), true);
-		return $res['items'][0]['snippet']['liveBroadcastContent'] == 'none';
+	function isOffline($video = null){
+		$res = $this->getLivestreamDetails($video === null ? $this->videoId : $video);
+		$this->offline = $res[0]['snippet']['liveBroadcastContent'] == 'none';
+		return $this->offline;
 	}
 
-	//api key has rate limit of 1m calls per day, need to check if limit is reached
-	function rateLimited(){
-		//check if reached api calls limit
-		return false;
-	}
-
-	function getCurrentViewers(){
+	function getCurrentViewers($video = null){
+		$this->videoId = $video === null ? $this->videoId : $video;
 		if($this->isOffline()){
-			return 0;
+			return -1;
 		}
-	    return (int)file_get_contents("$this->liveViewersUrl$this->videoId");					
+	    return (int)file_get_contents($this->APIs['live.viewers'] . $this->videoId);					
 	}
 
 	function trackViewership($timeInMinutes){
-		$this->getChannelInfo();
 		if(!$this->isOffline()){
 			//if duration to track viewership not set, then default to 24 houts
 			if(is_null($timeInMinutes)){
 				$timeInMinutes = 1440;
 			}
 			$this->start = $this->getDatetime();
-			while($timeInMinutes > 0 and !$this->isOffline() and !$this->rateLimited()){
+			while($timeInMinutes > 0 and !$this->isOffline() and !$this->rateLimitReached){
 				array_push($this->viewersOverTime, array($this->getDatetime(), $this->getCurrentViewers()));
 				sleep($this->freq);
 				$timeInMinutes -= intdiv($this->freq, 60);
