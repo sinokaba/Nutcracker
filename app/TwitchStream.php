@@ -1,6 +1,7 @@
 <?php
 
 namespace App;
+use Illuminate\Support\Facades\Log;
 
 class TwitchStream extends Livestream{
 	private $twitchClientId;
@@ -17,16 +18,27 @@ class TwitchStream extends Livestream{
 			'client_id' => $this->twitchClientId
 		);
 		$chan = $channel == null ? $this->channelName : $channel;
-		$res = json_decode(file_get_contents($this->urlBase . $chan . '?' . http_build_query($params)), true);
-		return $res['stream'];	
+		$res = $this->getUrlContents($this->urlBase . $chan . '/?' . http_build_query($params));
+		if($res !== null){
+			return $res['stream'];
+		}
+		else{
+			if(is_array($res)){
+				Log::error($chan . implode($array));
+			}
+			else{
+				Log::error($chan . $res);
+			}
+			return null;
+		}
 	}
 
-	function getTopLivestreams(){
-		return json_decode(file_get_contents($this->urlBase.'?client_id='.$this->twitchClientId), true);
+	function getTopLivestreams($limit = 25){
+		return $this->getUrlContents($this->urlBase.'?limit='.$limit.'&client_id='.$this->twitchClientId);
 	}
 
 	function getNumChatters(){
-		return json_decode(file_get_contents('https://tmi.twitch.tv/group/user/' . $this->channelName . '/chatters'), true);
+		return $this->getUrlContents('https://tmi.twitch.tv/group/user/' . $this->channelName . '/chatters');
 	}
 
 	function getStreamTitle(){
@@ -50,6 +62,7 @@ class TwitchStream extends Livestream{
 			$stats = $this->getStreamDetails();
 			return array(
 				'channel' => $stats['channel']['name'],
+				'id' => $stats['channel']['_id'],
 				'cat' => $stats['game'],
 				'title' => $stats['channel']['status'],
 				'createdAt' => strtotime($stats['created_at']), 

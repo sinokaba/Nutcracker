@@ -47,3 +47,8 @@ html, body{
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+.dark-icon{
+    color: black;
+    font-size: 4em;
+}

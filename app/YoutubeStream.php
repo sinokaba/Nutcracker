@@ -1,6 +1,7 @@
 <?php
 
 namespace App;
+use Illuminate\Support\Facades\Log;
 
 class youtubeStream extends Livestream{
 	private $apiKey, $rateLimitReached;
@@ -14,9 +15,8 @@ class youtubeStream extends Livestream{
 		'playlistItems' => 'https://www.googleapis.com/youtube/v3/playlistItems?',
 		'activities' => 'https://www.googleapis.com/youtube/v3/activities?',
 		'live.viewers' => 'https://www.youtube.com/live_stats?v=',
+		'live.chat' => 'https://www.googleapis.com/youtube/v3/liveChat/messages?'
     );
-	private $channelInfoUrl = 'channels?part=snippet,statistics&id=';
-	private $streamInfoUrl = 'videos?part=snippet%2CliveStreamingDetails&id=';
 
 	function __construct($youtubeChannel, $video = null, $freq = null){
 		parent::__construct($freq);
@@ -51,7 +51,7 @@ class youtubeStream extends Livestream{
 			'eventType' => 'live',
 			'type' => 'video',
 			'getVideosCategory' => '20',
-			'maxResults' => $max,
+			'maxResults' => min($max, 50),
 			'order' => 'viewcount',
 			'key' => $this->apiKey
 		);
@@ -68,9 +68,19 @@ class youtubeStream extends Livestream{
 		return $this->getApiResponse($this->APIs['channels'], $params);
 	}
 
+	function getChatDetails($chatId = null){
+		$params = array(
+			'part' => 'snippet',
+			'maxResults' => '2000',
+			'liveChatId' => $chatId,
+			'key' => $this->apiKey
+		);
+		return $this->getApiResponse($this->APIs['live.chat'], $params, false, false);
+	}
+
 	function getLivestreamDetails($liveVideo){
 		$params = array(
-			'part' => 'snippet,liveStreamingDetails',
+			'part' => 'snippet,contentDetails,statistics,liveStreamingDetails',
 			'id' => $liveVideo,
 			'key' => $this->apiKey
 		);
@@ -88,10 +98,18 @@ class youtubeStream extends Livestream{
 		return $this->getApiResponse($this->APIs['search'], $params);
 	}
 
-	function getApiResponse($api, $params, $cat = false){
-		$result = json_decode(file_get_contents($api . http_build_query($params)), true);
-		if(!$cat && $result['pageInfo']['totalResults'] === 0){
+	function getApiResponse($api, $params, $cat = false, $getItems = true){
+		$result = $this->getUrlContents($api . http_build_query($params));
+		if(!array_key_exists('pageInfo', $result)){
+			ob_start();
+			var_dump($result);
+			ob_end_flush();
+		}
+		if($result === null || (!$cat && $result['pageInfo']['totalResults'] === 0)){
 			return null;
+		} 
+		if(!$getItems){
+			return $result;
 		}
 		return $result['items'];
 	}
@@ -109,11 +127,15 @@ class youtubeStream extends Livestream{
 	}
 
 	function getStreamInfo(){
-		#$channelStats = json_decode(file_get_contents($this->ytUrlBase.$this->channelInfoUrl.$this->channelId.'&key='.$this->apiKey), true);
 		$channelStats = $this->getChannelDetails()[0];
-		$livestreamInfo = $this->getLivestreamDetails($this->videoId);
+		$livestreamInfo = $this->getLivestreamDetails($this->videoId)[0];
+		$chatters = null;
+		if(in_array('activeLiveChatId', $livestreamInfo)){
+			$chatters = $this->getChatDetails($livestreamInfo['liveStreamingDetails']['activeLiveChatId']);
+		}
+		//echo $chatters;
 		$this->game = null;
-		$streamInfo = $livestreamInfo[0]['snippet'];
+		$streamInfo = $livestreamInfo['snippet'];
 		for($i = 0; $i < count($this->categories); $i++){
 			if($this->categories[$i]['id'] == $streamInfo['categoryId']){
 				$this->game = $this->categories[$i]['snippet']['title'];
@@ -121,22 +143,34 @@ class youtubeStream extends Livestream{
 		}
 		return array(
 			'channel' => $channelStats['snippet']['title'],
+			'id' => $this->channelId,
 			'cat' => $this->game,
 			'title' => $streamInfo['title'],
-			'createdAt' => strtotime($livestreamInfo[0]['liveStreamingDetails']['actualStartTime']),
+			'createdAt' => strtotime($livestreamInfo['liveStreamingDetails']['actualStartTime']),
 			'followers' => $channelStats['statistics']['subscriberCount'],
 			'totalViews' => $channelStats['statistics']['viewCount'],
 			'channelCreation' => $channelStats['snippet']['publishedAt'],
 			'channelId' => $this->channelId,
 			'platform' => 'Youtube',
-			'chatters' => null
+			'chatters' => $chatters === null ? 0 : $chatters['pageInfo']['totalResults']
 		);
 	}
 
 	function isOffline($video = null){
 		$res = $this->getLivestreamDetails($video === null ? $this->videoId : $video);
-		$this->offline = $res[0]['snippet']['liveBroadcastContent'] == 'none';
-		return $this->offline;
+		if($res !== null){
+			$this->offline = $res[0]['snippet']['liveBroadcastContent'] == 'none';
+			return $this->offline;
+		}
+		else{
+			if(is_array($res)){
+				Log::error($video . $this->videoId . implode($res));
+			}
+			else{
+				Log::error($video . $this->videoId . $res);
+			}
+			return null;
+		}
 	}
 
 	function getCurrentViewers($video = null){

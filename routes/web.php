@@ -12,6 +12,7 @@
 */
 Route::get('/', 'PagesController@index');
 Route::get('/about', 'PagesController@about');
+Route::get('autocomplete', ['as' => 'autocomplete', 'uses' => 'PagesController@autocomplete']);
 
 Route::get('/trackViewership', 'ViewershipTrackerController@index');
 Route::get('/trackViewership/{id}', 'ViewershipTrackerController@show');
@@ -19,6 +20,7 @@ Route::post('/trackViewership/addChannel', 'ViewershipTrackerController@addChann
 
 Route::post('/getViewershipStats', 'ApiCallsController@getStats');
 Route::get('/topStreams', 'ApiCallsController@getTopstreams');
+Route::get('/trackAll', 'ApiCallsController@collectTopStreamersData');
 
 Route::resource('esportsViewers', 'EsportsController');
 ?>
