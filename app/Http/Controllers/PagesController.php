@@ -19,7 +19,7 @@ class PagesController extends Controller
     	$topStreams = array();
 		for($i = 0; $i < 2; $i++){
 			$vid = $topYoutube[$i];
-			array_push($topStreams, $vid['snippet']['channelId']);
+			array_push($topStreams, $vid['id']['videoId']);
 		}
 		for($i = 0; $i < 2; $i++){
 			$stream = $topTwitch['streams'][$i];

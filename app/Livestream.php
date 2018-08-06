@@ -59,6 +59,19 @@ class Livestream{
 		curl_close($ch);
 		return json_decode($output, true);
 	}
+
+	function printOutput($item){
+		ob_start();
+		if(is_array($item)){
+			var_dump($item);
+			echo('\n');
+		}
+		else{
+			echo($item . ' \n');
+		}
+		ob_end_flush();
+		sleep(5);
+	}
 }
 
 ?>

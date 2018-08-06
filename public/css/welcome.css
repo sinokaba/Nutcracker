@@ -1,6 +1,6 @@
 .welcome-page{
     color: #636b6f;
-    font-family: 'Raleway', sans-serif;
+    font-family: 'Raleway', sans-serif !important;
 }
 
 .full-height {

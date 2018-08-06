@@ -45,7 +45,7 @@
               </div>
               <div class="carousel-item">
                 <div id="youtube-embed-1" align='center'>
-                    <iframe width="800" height="450" align='center' src="https://www.youtube.com/embed/live_stream?channel={{ $topStreams[0] }}" frameborder="0" allowfullscreen></iframe>
+                    <iframe width="800" height="450" align='center' src="https://www.youtube.com/embed/{{ $topStreams[0] }}" frameborder="0" allowfullscreen></iframe>
                 </div>
               </div>
             </div>

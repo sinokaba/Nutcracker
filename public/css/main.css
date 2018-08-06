@@ -1,14 +1,17 @@
-html, body{
-    background-color: #fff;
+@import "https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700";
+
+body{
+    font-family: 'Poppins', sans-serif;
+    background: #fafafa;
 }
 
-.btn-outline-success:hover, .btn-outline-success:active, .btn-outline-success:visited{
+.my-btn:hover, .my-btn:active, .my-btn:visited{
 	background-color: #3AAFA9 !important;
 	border-color: #3AAFA9 !important;
 	color: #ffffff !important;
 }
 
-.btn-outline-success{
+.my-btn{
 	border-color: #3AAFA9 !important;
 	color: #3AAFA9 !important;
 }
@@ -21,8 +24,16 @@ html, body{
     display: none;
 }
 
+.invis{
+    visibility: hidden;
+}
+
 .stream-title{
     cursor: pointer;
+}
+
+.viewers{
+    color: red;
 }
 
 .popover{
@@ -51,4 +62,35 @@ html, body{
 .dark-icon{
     color: black;
     font-size: 4em;
+}
+
+.online{
+    color: green;
+}
+
+.offline{
+    color: red;
+}
+
+.main-loader{
+    border: 1.3em solid #f3f3f3; /* Light grey */
+    border-top: 1.3em solid red; /* Blue */
+    border-radius: 50%;
+    width: 13em;
+    height: 13em;
+    animation: spin 1s linear infinite;
+}
+
+.mini-loader{
+    border: .4em solid #f3f3f3; /* Light grey */
+    border-top: .4em solid red; /* Blue */
+    border-radius: 50%;
+    width: 3em;
+    height: 3em;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin{
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }

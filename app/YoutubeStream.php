@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Log;
 class youtubeStream extends Livestream{
 	private $apiKey, $rateLimitReached;
 	private $channelId, $videoId, $categories;
+	//all the urls to make youtube api calls
 	public $APIs = array(
 		'categories' => 'https://www.googleapis.com/youtube/v3/videoCategories?',
 		'videos' => 'https://www.googleapis.com/youtube/v3/videos?',
@@ -19,21 +20,24 @@ class youtubeStream extends Livestream{
     );
 
 	function __construct($youtubeChannel, $video = null, $freq = null){
+		//construct a Livestream object which youtube class inherits from
 		parent::__construct($freq);
 		$this->setApiKey(config('app.youtube_api_key'));
-		if($youtubeChannel == null){
+		//only get livestream info if channel or video is given
+		if($youtubeChannel !== null || $video !== null){
 			$this->videoId = $video;
-		}
-		else{
-			$liveChanInfo = $this->getLiveVideoByChannel($youtubeChannel);
-			$this->videoId = $liveChanInfo[0]['id']['videoId'];
-		}
-		if($this->videoId !== null){
+			//if a youtube channel url is given, then get the video id of livestream
+			if($youtubeChannel !== null){
+				$liveChanInfo = $this->getLiveVideoByChannel($youtubeChannel);
+				$this->videoId = $liveChanInfo[0]['id']['videoId'];
+			}
+			Log::error($this->videoId); //log the video id of current youtube class, to help debug any unforseen errors
 			$liveVideoInfo = $this->getLivestreamDetails($this->videoId);
 			$this->channelId = $liveVideoInfo[0]['snippet']['channelId'];
 			$this->channelName = $liveVideoInfo[0]['snippet']['channelTitle'];
+			$this->isOffline();
+			$this->categories = $this->getVideosCategory();
 		}
-		$this->categories = $this->getVideosCategory();
 	}
 
 	function getVideosCategory(){
@@ -50,7 +54,6 @@ class youtubeStream extends Livestream{
 			'part' => 'snippet',
 			'eventType' => 'live',
 			'type' => 'video',
-			'getVideosCategory' => '20',
 			'maxResults' => min($max, 50),
 			'order' => 'viewcount',
 			'key' => $this->apiKey
@@ -99,13 +102,9 @@ class youtubeStream extends Livestream{
 	}
 
 	function getApiResponse($api, $params, $cat = false, $getItems = true){
+		Log::error($this->videoId);
 		$result = $this->getUrlContents($api . http_build_query($params));
-		if(!array_key_exists('pageInfo', $result)){
-			ob_start();
-			var_dump($result);
-			ob_end_flush();
-		}
-		if($result === null || (!$cat && $result['pageInfo']['totalResults'] === 0)){
+		if($result === null || !array_key_exists('items', $result) || count($result['items']) === 0){
 			return null;
 		} 
 		if(!$getItems){
@@ -130,7 +129,7 @@ class youtubeStream extends Livestream{
 		$channelStats = $this->getChannelDetails()[0];
 		$livestreamInfo = $this->getLivestreamDetails($this->videoId)[0];
 		$chatters = null;
-		if(in_array('activeLiveChatId', $livestreamInfo)){
+		if($livestreamInfo !== null && in_array('activeLiveChatId', $livestreamInfo)){
 			$chatters = $this->getChatDetails($livestreamInfo['liveStreamingDetails']['activeLiveChatId']);
 		}
 		//echo $chatters;
@@ -160,7 +159,6 @@ class youtubeStream extends Livestream{
 		$res = $this->getLivestreamDetails($video === null ? $this->videoId : $video);
 		if($res !== null){
 			$this->offline = $res[0]['snippet']['liveBroadcastContent'] == 'none';
-			return $this->offline;
 		}
 		else{
 			if(is_array($res)){
@@ -169,8 +167,9 @@ class youtubeStream extends Livestream{
 			else{
 				Log::error($video . $this->videoId . $res);
 			}
-			return null;
+			$this->offline = false;
 		}
+		return $this->offline;
 	}
 
 	function getCurrentViewers($video = null){

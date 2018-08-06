@@ -11,7 +11,10 @@
 			<div class="form-group mx-sm-4 mb-2">
 				<input type="text" class="form-control" style="width:21em" name="twitch-channel" maxlength="30" id="twitch-channel" placeholder="riotgames" required>
 			</div>
-			<button class="btn btn-primary mb-2" type="button" id="add-tw-channel">Add</button>
+			<button class="my-btn btn btn-outline-success mb-2" type="button" id="add-tw-channel">Add</button>
+			<div style="margin-left:1em">
+				<div id="mini-loader-tw" class="mini-loader invis"></div>
+			</div>
 		</form>
 		<form class="needs-validation justify-content-center form-inline" id="yt-channel-form" novalidate>
 			<div class="form-group mb-2">
@@ -20,14 +23,21 @@
 			<div class="form-group mx-sm-4 mb-2">
 				<input type="text" class="form-control" style="width:21em"  name="youtube-channel" maxlength="60" id="youtube-channel" placeholder="https://www.youtube.com/CHANNEL" required>
 			</div>
-			<button class="btn btn-primary mb-2" type="button" id="add-yt-channel">Add</button>
+			<button class="my-btn btn btn-outline-success mb-2" type="button" id="add-yt-channel">Add</button>
+			<div style="margin-left:1em">
+				<div id="mini-loader-yt" class="mini-loader invis"></div>
+			</div>
 		</form>
 	</div>
+
+	<div class="row justify-content-center hide" id="main-loader">
+		<div class="main-loader"></div>
+	</div>
+	
 	<div class="row">
 		<div class="col-md-8">
 		    <h2 id="status"></h2>
 		    <div id="curve_chart" style="width: 100%; height: 70vh"></div>
-			<button id="save-chart" type="button" class="hide btn btn-success">Download Chart</button>
 		</div>
 		<div class="col-md-4 hide" id="side-content">
           <h4 class="d-flex justify-content-between align-items-center mb-3">
@@ -39,11 +49,19 @@
           <ul class="list-group mb-3" id="streamer-stats">
             <li class="list-group-item d-flex justify-content-between lh-condensed">
               <div>
-                <h5 class="my-0">Total Viewers</h5>
-                <!--<small class="text-muted">Brief description</small>-->
+                <h4 class="my-0">Total Viewers</h4>
               </div>
-              <strong id="total-viewers">0</strong>
+              <strong id="total-viewers"></strong>
             </li>
+             <li class="list-group-item d-flex justify-content-between lh-condensed">
+              <div>
+                <h5 class="my-0" style="cursor:pointer" data-container="body" data-placement="left" data-toggle="popover" id="popover-0">Peak Total Viewers</h5>
+              </div>
+              <strong id="peak-viewers">0</strong>
+              <div id="popover-0-content" class="hide">
+
+              </div>
+            </li>           
             <li class="list-group-item d-flex justify-content-between lh-condensed">
               <div>
                 <h5 class="my-0 success">Uptime</h5>
@@ -53,6 +71,7 @@
             </li>
           </ul>
 		<button id="end-tracking" type="button" class="hide btn btn-danger">Stop</button>
+		<button id="save-chart" type="button" class="my-btn hide btn btn-outline-success ">Download Chart</button>
 		</div>
 	</div>
 </div>
@@ -60,6 +79,7 @@
 
 @section('addScript')
 	<script type="text/javascript">
+		//declare the settings for the popover and how it's controlled
 		var popoverSettings = {
 			html: true,
 			container: 'body',
@@ -71,34 +91,50 @@
 		}
 
 		google.load('visualization', '1', {'packages':['corechart']});
+
+		//add the csrf token to ajax calls so that laravel can stop crying
 		$.ajaxSetup({
 		    headers: {
 		        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
 		    }}
 		);
+		//sortable is a function implemented on jquery which gives the user the ability to move items on a list dynamically
 		$("#streamer-stats").sortable();
 		$("#streamer-stats").disableSelection();
 		// Set a callback to run when the Google Visualization API is loaded.
 		//google.setOnLoadCallback(initTable);
 
-	    // Fetch all the forms we want to apply custom Bootstrap validation styles to
 	    var forms = document.getElementsByClassName('needs-validation');
 	    var channels = [];
-	    //var numDataPoints = [];
+	    //delcare the regex expressions for validating user input on the forms
 	    var youtubeRe = /^(https:\/\/www.youtube.com\/)[\w\-\._~:/?#[\]@!\$&\(\)\*\+,;=.]+$/g;
 	    var twitchRe = /^[a-zA-Z0-9_]{4,25}$/;
+	    //the start and now variables help keep track of how long the tracking has been going on
 	    var start, now;
+	    //this setup variable is the boolean variable which helps decide when to show or hide html elements meant to give more information to user while tracking
 	    var setup = false;
+	    //max channels that the user can input, if it is reached the input fields are disabled
 	    var maxChannels = 7;
+	    //how many seconds must be waited until another ajax call to request updated information can be executed
 	    var cd = 60;
-		//need to check if channels exist
 
-	    function updateTime(){
-	    	$("#uptime").html((Math.floor(Date.now() / 60000) - start) + "m");
-	    }
+	  	$("#add-tw-channel").on('click', function(event){
+	  		if(channels.length > 0){
+	  			$("#mini-loader-tw").toggleClass("invis");
+	  		}
+		  	checkInput("#twitch-channel", 0, event);
+	  	});
+	    
+	    $("#add-yt-channel").on('click', function(event){
+	  		if(channels.length > 0){
+	  			$("#mini-loader-yt").toggleClass("invis");
+	  		}	    	
+		  	checkInput("#youtube-channel", 1, event);
+	  	});
 
 	    // Loop over them and prevent submission
 	    function checkInput(formId, platformId, event){
+	    	disableAddButtons();
 	    	console.log($(formId).serializeArray());
 	 	    if($(formId)[0].checkValidity() === false){
 		    	event.preventDefault();
@@ -130,6 +166,7 @@
 			    		//console.log(channels);
 				    	$(formId)[0].classList.add('was-validated');
 				    	if(channels.length == 1){
+	  						$("#main-loader").toggleClass("hide");
 							start = Math.floor(Date.now() / 60000);
 				    		initTable();
 	   						setInterval(updateTime, 1000 * cd);
@@ -143,13 +180,10 @@
 		    }   	
 	    }
 
-	  	$("#add-tw-channel").on('click', function(event){
-		  	checkInput("#twitch-channel", 0, event);
-	  	});
-	    
-	    $("#add-yt-channel").on('click', function(event){
-		  	checkInput("#youtube-channel", 1, event);
-	  	});
+	    //updates the uptime of the tracking system and visualizes it for the user
+	    function updateTime(){
+	    	$("#uptime").html((Math.floor(Date.now() / 60000) - start) + "m");
+	    }
 
 	    $("#end-tracking").on('click', function(){
 	    	if($("#end-tracking").text() == "Stop"){
@@ -172,6 +206,8 @@
 
 		var chartData, chart, update;
 		var intervalSet = false;
+		var peakViewers = 0;
+		var peakViewersChannels;
 		var options = {
 			title: "Viewership",
 			vAxis: {title: "Live Viewers"},
@@ -230,25 +266,28 @@
 					d.setUTCSeconds(res[0][0]);
 					//console.log(res[1]);
 					var dataToAdd = [formatDate(d)];
-					var viewershipSum = -1;
+					var viewershipSum = 0;
+					var peakViewershipHTML = "<ul class='list-group' id='popover-content-0'>";
 					for(var i = 1; i < res[0].length; i++){
 						var channelViewers = res[0][i];
 						var c = channels[i-1];
 						if(res[1][c] != null){
 							updateStreamInfo(res, res[1][c], c);
-							dataToAdd.push(res[0][i])
+							dataToAdd.push(res[0][i]);
 						}
 						else{
 							if(channelViewers >= 0){
 								dataToAdd.push(res[0][i]);
 							}
 							else{
+								if(c in streamInfo['chan']){
+									$("#status-" + streamInfo['chan'][c]['id']).removeClass('online').addClass('offline');									
+								}
 								console.log("channels before: " + channels);
 								if(channels.length == 1){
 									endTracking();
 								}
 								else{
-									$("#streamer-" + streamInfo['chan'][c]['id']).html(streamInfo['chan'][c]['channel'] + '- offline').removeClass('text-success').addClass('text-danger');
 									channels.splice(i-1, 1);
 									if((channels.length + 1) < chartData.getNumberOfColumns()){
 										chartData.removeColumn(i);
@@ -259,6 +298,8 @@
 						}
 						if(channelViewers >= 0){
 							viewershipSum += channelViewers;
+							//create the list elements for channels which contributed to peak viewership
+							peakViewershipHTML += "<li>"+streamInfo['chan'][c]['channel']+" - " + channelViewers+"</li>";
 					  		if(streamInfo['views'] === null){
 					  			streamInfo['views'] = {};
 								streamInfo['views'][c] = [channelViewers, channelViewers, 1];
@@ -276,10 +317,14 @@
 							var now = new Date(0);
 							var uptime = Math.floor((((new Date()).getTime()/1000)  - streamInfo['chan'][c]['createdAt'])/60);
 							$("#uptime-" + streamInfo['chan'][c]['id']).html(uptime + " minutes");
-							$("#stream-viewers-"+streamInfo['chan'][c]['id']).html(Math.floor(streamInfo['views'][c][0]/streamInfo['views'][c][2]) + " Avg Viewers");
+							$("#stream-viewers-"+streamInfo['chan'][c]['id']).html(Math.floor(streamInfo['views'][c][0]/streamInfo['views'][c][2]) 
+							+ " Avg <span class='viewers octicon octicon-organization'></span>");
 						}
 					}
-					if(viewershipSum < 0){
+
+					peakViewershipHTML += "</ul>";
+
+					if(channels.length === 0){
 					  endTracking();
 					}
 					else{
@@ -289,13 +334,21 @@
 						console.log(dataToAdd);
 						$("#status").html("Live");                        
 						chartData.addRow(dataToAdd);
-						$("#total-viewers").html(viewershipSum);
-
+						$("#total-viewers").html(viewershipSum + " <span class='viewers octicon octicon-person'></span>");
+						if(viewershipSum > peakViewers){
+							$("#peak-viewers").html(viewershipSum);
+							peakViewersChannels = channels;
+							peakViewers = viewershipSum;
+							$("#popover-0").popover(popoverSettings);
+							$("#popover-0-content").html(peakViewershipHTML);
+						}
 						if(!intervalSet){
 							intervalSet = true;
 							update = setInterval(getData, 1000 * cd); 
 						}
+						toggleLoading();
 						drawChart();
+				  		enableAddButtons();
 					}
 				},
 				error: function(XMLHttpRequest, textStatus, errorThrown) { 
@@ -335,6 +388,17 @@
 			if(chartData.getNumberOfRows() <= 1){
 				clearSideContent();
 			}
+			toggleLoading();
+	  	}
+
+	  	function enableAddButtons(){
+			$("#add-yt-channel").prop("disabled", false);
+			$("#add-tw-channel").prop("disabled", false);
+	  	}
+
+	  	function disableAddButtons(){
+			$("#add-yt-channel").prop("disabled", true);
+			$("#add-tw-channel").prop("disabled", true);
 	  	}
 
 	  	function clearSideContent(){
@@ -347,15 +411,30 @@
 			}
 	  	}
 
+	  	function toggleLoading(){
+			if(!$("#mini-loader-yt").hasClass("invis")){
+				$("#mini-loader-yt").toggleClass("invis");
+			}
+			if(!$("#mini-loader-tw").hasClass("invis")){
+				$("#mini-loader-tw").toggleClass("invis");
+			}
+			if(!$("#main-loader").hasClass("hide")){
+				$("#main-loader").toggleClass("hide");
+			}
+	  	}
+
 	  	function updateStreamInfo(response, chanInfo, channel){
+			var title = chanInfo['title'].replace(/'/g, "&apos;");
+			console.log(title);
 			if(!(channel in addedChannelsObj)){
 				var now = new Date(0);
 				console.log(chanInfo['createdAt']);
 				now.setUTCSeconds(chanInfo['createdAt']);
 				streamInfo['chan'][channel] = chanInfo;
 				var liHTML = "<li class='list-group-item d-flex justify-content-between lh-condensed'>"
-				             +"<div><h5 class='my-0 stream-title text-success' id='streamer-"+chanInfo['id']+"' data-container='body'" 
-				             +"data-toggle='popover' data-placement='left' title='"+chanInfo['title']+"'>"+chanInfo['channel']+"</h5>"
+				             +"<div><h5 class='my-0 stream-title' id='streamer-"+chanInfo['id']+"' data-container='body'" 
+				             +"data-toggle='popover' data-placement='left' title='"+title+"'>"
+				             +chanInfo['channel']+" <span id='status-"+chanInfo['id']+"' class='online octicon octicon-primitive-dot'></span></h5>"
 							 +"<ul class='list-group' id='popover-content-"+chanInfo['id']+"' style='display: none'>"
 						     +"<li class='list-group-item d-flex justify-content-between'>"
 						     +"<div><strong class='my-0 success'>Start</strong></div>"
@@ -385,7 +464,7 @@
 			else if(channel in response[1]){
 				$("#totalViews-" + chanInfo['id']).html(chanInfo['totalViews']);
 				$("#stream-cat-" + chanInfo['id']).html(chanInfo['cat']);
-				$("#title-" + chanInfo['id']).html(chanInfo['title']);
+				$("#title-" + chanInfo['id']).html(title);
 			}
 	  	}
 	</script>

@@ -18,9 +18,12 @@ Route::get('/trackViewership', 'ViewershipTrackerController@index');
 Route::get('/trackViewership/{id}', 'ViewershipTrackerController@show');
 Route::post('/trackViewership/addChannel', 'ViewershipTrackerController@addChannel');
 
+Route::get('/blog', 'PostsController@blog');
+
 Route::post('/getViewershipStats', 'ApiCallsController@getStats');
 Route::get('/topStreams', 'ApiCallsController@getTopstreams');
 Route::get('/trackAll', 'ApiCallsController@collectTopStreamersData');
+Route::get('/channel/{id}', 'ApiCallsController@viewChannel');
 
 Route::resource('esportsViewers', 'EsportsController');
 ?>

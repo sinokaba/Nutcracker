@@ -11,14 +11,18 @@ class TwitchStream extends Livestream{
 		parent::__construct($freq);
 		$this->twitchClientId = config('app.twitch_client_id');
 		$this->channelName = $twitchChannel;
+		if($this->channelName !== null){
+			$this->isOffline();
+		}
 	}
 
 	function getStreamDetails($channel = null){
 		$params = array(
 			'client_id' => $this->twitchClientId
 		);
-		$chan = $channel == null ? $this->channelName : $channel;
-		$res = $this->getUrlContents($this->urlBase . $chan . '/?' . http_build_query($params));
+		$chan = $channel === null ? $this->channelName : $channel;
+		$res = $this->getUrlContents($this->urlBase . $chan . '?' . http_build_query($params));
+		//Log::error(var_dump($res));
 		if($res !== null){
 			return $res['stream'];
 		}
