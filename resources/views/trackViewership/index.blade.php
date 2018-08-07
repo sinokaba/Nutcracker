@@ -75,7 +75,7 @@
             </li>
         </ul>
         <button id="end-tracking" type="button" class="hide btn btn-danger">Stop</button>
-        <button id="save-chart" type="button" class="my-btn hide btn btn-outline-success ">Download Chart</button>
+        <button id="save-chart" type="button" class="my-btn hide btn btn-outline-success">Download Chart</button>
     </div>
 </div>
 </div>
@@ -274,7 +274,13 @@
         //create a tag to act as a pseudo download link, where it points to chart's image uri
         var downloadLink = document.createElement("a");
         downloadLink.href = chart.getImageURI();
-        downloadLink.download = "nutcracker_chart.png";
+        var dlTitle = "nutcracker_chart";
+        for(var i = 0; i < channelsList.length; i++){
+        	if(channels[channelsList[i]]["channelInfo"] !== null){
+        		dlTitle += "_"+channels[channelsList[i]]["channelInfo"]["channel"];
+        	}
+        }
+        downloadLink.download = dlTitle + ".png";
         /// create a "fake" click-event to trigger the download
         if (document.createEvent) {
             e = document.createEvent("MouseEvents");
@@ -435,9 +441,6 @@
     function endTracking() {
         $("#chart-title").html();
         channelsList = [];
-        //$("#end-tracking").addClass("hide");
-        //$("#side-content").addClass("hide");
-        $("#save-chart").toggleClass("hide");
         setup = false;
         clearInterval(update);
         //$("#save-chart").addClass("hide");
