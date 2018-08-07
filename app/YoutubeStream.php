@@ -167,7 +167,7 @@ class youtubeStream extends Livestream{
 			else{
 				Log::error($video . $this->videoId . $res);
 			}
-			$this->offline = false;
+			$this->offline = true;
 		}
 		return $this->offline;
 	}

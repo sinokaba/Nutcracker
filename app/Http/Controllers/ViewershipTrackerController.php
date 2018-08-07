@@ -17,6 +17,6 @@ class ViewershipTrackerController extends Controller
     public function addChannel(Request $req){
     	$twitchChannel = $req->input('twitchChannel');
     	$youtubeChannel = $req->input('youtubeChannel');
-    	return view('trackViewership.graph', ['id' => $twitchChannel]);
+    	return view('trackViewership.index', ['id' => $twitchChannel]);
     }
 }

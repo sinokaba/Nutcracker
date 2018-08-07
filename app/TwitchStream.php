@@ -21,6 +21,7 @@ class TwitchStream extends Livestream{
 			'client_id' => $this->twitchClientId
 		);
 		$chan = $channel === null ? $this->channelName : $channel;
+		Log::error("twitch chan = " . $chan);
 		$res = $this->getUrlContents($this->urlBase . $chan . '?' . http_build_query($params));
 		//Log::error(var_dump($res));
 		if($res !== null){
@@ -42,6 +43,7 @@ class TwitchStream extends Livestream{
 	}
 
 	function getNumChatters(){
+		Log::error($this->channelName);
 		return $this->getUrlContents('https://tmi.twitch.tv/group/user/' . $this->channelName . '/chatters');
 	}
 

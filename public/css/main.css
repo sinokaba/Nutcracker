@@ -36,8 +36,19 @@ body{
     color: red;
 }
 
+.viewers-peak{
+    color: blue;
+}
+
 .popover{
     width: 100% !important;
+}
+
+.line {
+    width: 100%;
+    height: 1px;
+    border-bottom: 1px dashed #ddd;
+    margin: 40px 0;
 }
 
 .card-img-top{
