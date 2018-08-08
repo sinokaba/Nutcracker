@@ -21,48 +21,53 @@ class ApiCallsController extends Controller
 		for($i = 0; $i < count($channelsList); $i++){
 			//all youtube urls will have youtube.com, else the url given is twitch
 			//this is further checked by the regex expression on the front end, that checks for valid twitch and youtube urls
-			if(stripos($channelsList[$i], 'www.youtube.com/') == null){
-				$stream = new twitchStream($channelsList[$i]);
-				$platform = 'Twitch';
-			}
-			else{
-				//check the youtube url given for key strings to determine if it specifies a channel or video
-				if(stripos($channelsList[$i], '/channel/') !== false){
-					$stream = new youtubeStream(substr($channelsList[$i], stripos($channelsList[$i], '/channel/') + 9));
+			if($channels[$channelsList[$i]]["status"] == 1 || $channels[$channelsList[$i]]['numChecked'] % 60 == 0){
+				if(stripos($channelsList[$i], 'www.youtube.com/') == null){
+					$stream = new twitchStream($channelsList[$i]);
+					$platform = 'Twitch';
 				}
 				else{
-					$stream = new youtubeStream(null, substr($channelsList[$i], stripos($channelsList[$i], 'watch?v=') + 8));
-				}			
-				$platform = 'Youtube';
-			}
-			$viewers = $stream->getCurrentViewers();
-			if($viewers >= 0){
-				$channels[$channelsList[$i]]['viewersHist'][0] += $viewers; //total views
-				$channels[$channelsList[$i]]['viewersHist'][1] = $viewers; //current viewers
-				if($viewers > $channels[$channelsList[$i]]['viewersHist'][2]){
-					$channels[$channelsList[$i]]['viewersHist'][2] = $viewers; //peak viewership
-				}
-				$channels[$channelsList[$i]]['viewersHist'][3] += 1; //num data count for viewership
-				//if first time adding stream, or 60 minutes has passed then get updated info of channel
-				if($channels[$channelsList[$i]]['addedToDB'] == 0 || $channels[$channelsList[$i]]['numChecked'] % 60 === 0){
-					$channels[$channelsList[$i]]['channelInfo'] = $stream->getStreamInfo();
-					if($channels[$channelsList[$i]]['channelInfo'] !== null){
-						$this->storeChannel($channels[$channelsList[$i]]['channelInfo']);
+					//check the youtube url given for key strings to determine if it specifies a channel or video
+					if(stripos($channelsList[$i], '/channel/') !== false){
+						$stream = new youtubeStream(substr($channelsList[$i], stripos($channelsList[$i], '/channel/') + 9));
 					}
-					$channels[$channelsList[$i]]['addedToDB'] = 1;					
+					else{
+						$stream = new youtubeStream(null, substr($channelsList[$i], stripos($channelsList[$i], 'watch?v=') + 8));
+					}			
+					$platform = 'Youtube';
 				}
+				$viewers = $stream->getCurrentViewers();
+				if($viewers >= 0){
+					$channels[$channelsList[$i]]['viewersHist'][0] += $viewers; //total views
+					$channels[$channelsList[$i]]['viewersHist'][1] = $viewers; //current viewers
+					if($viewers > $channels[$channelsList[$i]]['viewersHist'][2]){
+						$channels[$channelsList[$i]]['viewersHist'][2] = $viewers; //peak viewership
+					}
+					$channels[$channelsList[$i]]['viewersHist'][3] += 1; //num data count for viewership
+					//if first time adding stream, or 60 minutes has passed then get updated info of channel
+					if($channels[$channelsList[$i]]['addedToDB'] == 0){
+						$channels[$channelsList[$i]]['channelInfo'] = $stream->getStreamInfo();
+						if($channels[$channelsList[$i]]['channelInfo'] !== null){
+							$this->storeChannel($channels[$channelsList[$i]]['channelInfo']);
+						}
+						$channels[$channelsList[$i]]['addedToDB'] = 1;					
+					}
 
-			}
-			else{
-				$channels[$channelsList[$i]]['viewersHist'][1] = 0;
-				$channels[$channelsList[$i]]['status'] = 0;
+				}
+				else{
+					$channels[$channelsList[$i]]['viewersHist'][1] = 0;
+					$channels[$channelsList[$i]]['status'] = 0;
+					//add the average viewership data for the channel if the channel goes offline and its viewership has been tracked
+					if($channels[$channelsList[$i]]['channelInfo'] !== null && $channels[$channelsList[$i]]['addedToDB'] == 1){
+						if($channels[$channelsList[$i]]['viewersHist'][2] > 0){
+							$avgViewership = floor($channels[$channelsList[$i]]['viewersHist'][0]/$channels[$channelsList[$i]]['viewersHist'][3]);
+							$this->storeStreamViewership($channels[$channelsList[$i]]['channelInfo'], $avgViewership, $channels[$channelsList[$i]]['viewersHist'][2]);
+							$channels[$channelsList[$i]]['addedToDB'] = 2;
+						}
+					}
+				}
 			}
 			$channels[$channelsList[$i]]['numChecked'] += 1;
-			//add the average viewership data for the channel if the channel goes offline and its viewership has been tracked
-			if($viewers < 0 && $channels[$channelsList[$i]]['channelInfo'] !== null){
-				$avgViewership = floor($channels[$channelsList[$i]]['viewersHist'][0]/$channels[$channelsList[$i]]['viewersHist'][3]);
-				$this->storeStreamViewership($channels[$channelsList[$i]]['channelInfo'], $avgViewership, $channels[$channelsList[$i]]['viewersHist'][2] = $viewers);
-			}
 		}
 		array_push($res, $channels);
 		//encode the multidimensional associated array to json with the numeric_check option to ensure that numbers don't get converted

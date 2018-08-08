@@ -20,6 +20,8 @@ Route::post('/trackViewership/addChannel', 'ViewershipTrackerController@addChann
 
 Route::get('/blog', 'PostsController@blog');
 
+Route::get('channel?', 'ChannelsController@show');
+
 Route::post('/getViewershipStats', 'ApiCallsController@getStats');
 Route::get('/topStreams', 'ApiCallsController@getTopstreams');
 Route::get('/trackAll', 'ApiCallsController@collectTopStreamersData');

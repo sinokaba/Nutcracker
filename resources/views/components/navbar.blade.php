@@ -23,8 +23,8 @@
                 <a class="nav-link" href="{{ url('/blog') }}">Blog</a>
             </li>
         </ul>
-        <form class="form-inline mt-2 mt-md-0">
-            <input class="form-control mr-sm-2" type="text" id="search-channel" placeholder="Search" aria-label="Search">
+        <form class="form-inline mt-2 mt-md-0" action="channel" method="GET">
+            <input class="form-control mr-sm-2" type="text" id="search-channel" placeholder="Channel" aria-label="Search">
             <button class="my-btn btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
         </form>
     </div>

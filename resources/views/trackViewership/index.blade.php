@@ -202,11 +202,11 @@
                 else {
                 	var userInput = $(formId).serializeArray()[0]["value"];
                     channels[userInput] = {
-                    	"status": 1,
-                    	'numChecked': 0,
-                    	"channelInfo": null,
-                    	"viewersHist": [0, 0, 0, 0],
-                    	"addedToDB": 0
+                    	"status": 1, //1 = online, 0 = offline
+                    	'numChecked': 0, //number of items this channel was checked
+                    	"channelInfo": null, //derived from api calls
+                    	"viewersHist": [0, 0, 0, 0], //total viewers, current viewers, peak viewers, data count
+                    	"addedToDB": 0 //0 = not added, 1 = channel added, 2 = stream added
                     };
                     channelsList.push(userInput);
                     activeChannels++;
@@ -386,19 +386,18 @@
 
 	            	activeChannels.push(chanId);
 
-	                output["dataToAdd"].push(currentViewers);
 	                output["contributingChannels"].push(chanData["channelInfo"]["channel"]);
 		            output["viewershipSum"] += currentViewers;
 		            //create the list elements for channels which contributed to peak viewership
 		            output["peakViewersHTML"] += "<li>" + chanData["channelInfo"]["channel"] + " - " + currentViewers + "</li>";
 		            updateStreamInfo(chanData);
 		        }
-		        else{
-		        	//indicate a channel that has gone offline
-	                $("#status-" + chanId).removeClass("online").addClass("offline");
-	                $("#status-" + chanId).attr("title", "Offline");
-	                output["dataToAdd"].push(0);	                		        	
+		        else if ($("#status-" + chanId).hasClass("online")) {
+			        	//indicate a channel that has gone offline
+	                	$("#status-" + chanId).removeClass("online").addClass("offline");
+		                $("#status-" + chanId).attr("title", "Offline");
 		        }
+	            output["dataToAdd"].push(currentViewers);
             }
             else{
             	//remove channel that is offline or does not exists form list from list and channels object
