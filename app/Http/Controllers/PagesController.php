@@ -7,6 +7,7 @@ use App\Livestream;
 use App\Channel;
 use App\twitchStream;
 use App\youtubeStream;
+use Illuminate\Support\Facades\Log;
 
 //returns specified route
 class PagesController extends Controller
@@ -32,8 +33,15 @@ class PagesController extends Controller
     	return view('pages.about');
     }
 
-    public function trackViewership(){
-    	return view('pages.trackViewership');
+    public function getChannel($channelName){
+        Log::error($channelName);
+        $channel = Channel::where('channel_name', $channelName)->first();
+        if($channel !== null){
+            return view('pages.channel')->with('chan', $channel);
+        }
+        $searchResults = Channel::where('channel_name','LIKE','%'.$term.'%')->take(10)->get();
+        //return view('pages.search')->with('results', $searchResults);
+        echo 'not found';
     }
 
     public function autocomplete(Request $request){

@@ -11,6 +11,9 @@ use App\Stream;
 
 class ApiCallsController extends Controller
 {
+    public function index(){
+    	return view('livestreams.index');
+	}
     //returns current number of viewers as well as stats for the array of channels given
     public function getStats(Request $request){
     	//get the data sent by the ajax call from the front end
@@ -75,10 +78,8 @@ class ApiCallsController extends Controller
 		return json_encode($res, JSON_NUMERIC_CHECK);
     }
 
-    public function viewChannel($channelId){
-    	//find looks for the row in channels table with the same primary key
-    	$chan = Channel::find($channelId);
-    	return view('pages.channel')->with('chan', $chan);
+    public function viewChannel(Request $request){
+		return redirect()->to('channel/'.$request->input('search-term'));
     }
 
 	public function storeChannel($streamInfo){
@@ -233,6 +234,6 @@ class ApiCallsController extends Controller
 			);
 		}
 		krsort($topStreams);
-		return view('trackViewership.topChannels')->with('data', $topStreams);
+		return view('livestreams.topChannels')->with('data', $topStreams);
     }
 }
