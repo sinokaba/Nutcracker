@@ -61,7 +61,7 @@ class ApiCallsController extends Controller
 			//add the average viewership data for the channel if the channel goes offline and its viewership has been tracked
 			if($viewers < 0 && $channels[$channelsList[$i]]['channelInfo'] !== null){
 				$avgViewership = floor($channels[$channelsList[$i]]['viewersHist'][0]/$channels[$channelsList[$i]]['viewersHist'][3]);
-				$this->storeStreamViewership($streamInfo, $avgViewership, $channels[$channelsList[$i]]['viewersHist'][2] = $viewers);
+				$this->storeStreamViewership($channels[$channelsList[$i]]['channelInfo'], $avgViewership, $channels[$channelsList[$i]]['viewersHist'][2] = $viewers);
 			}
 		}
 		array_push($res, $channels);

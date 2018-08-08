@@ -1,8 +1,7 @@
 @extends('layout')
 
 @section('content')
-<main role="main" class="container">
-<div>
+<div class="container">
     <form class="needs-validation justify-content-center form-inline" id="tw-channel-form" onkeypress="return event.keyCode != 13;" novalidate>
         <div class="form-group mb-2" style="width: 130px">
 			<h6 id="twitch-platform">Twitch Channel</h6>        
@@ -27,57 +26,56 @@
             <div id="mini-loader-yt" class="mini-loader invis"></div>
         </div>
     </form>
-</div>
 
-<div class="line"></div>
+	<hr class="featurette-divider">
 
-<div class="row justify-content-center hide" id="main-loader">
-    <div class="main-loader"></div>
-</div>
-<div class="row">
-    <div class="col-md-8">
-        <h3 id="chart-title"></h3>
-        <div id="curve_chart" download="nutcracker_chart.jpg" style="width: 100%; height: 70vh"></div>
-    </div>
-    <div class="col-md-4 hide" id="side-content">
-        <h3>
-            Additional Stats
-            <span class="octicon octicon-graph"></span>
-        </h3>
-        <ul class="list-group mb-3" id="streamer-stats">
-            <li class="list-group-item d-flex justify-content-between lh-condensed">
-                <div>
-                    <h4 class="my-0">Total Viewers</h4>
-                </div>
+	<div class="row justify-content-center hide" id="main-loader">
+	    <div class="main-loader"></div>
+	</div>
+	<div class="row">
+	    <div class="col-md-8">
+	        <h3 id="chart-title"></h3>
+	        <div id="curve_chart" download="nutcracker_chart.jpg" style="width: 100%; height: 70vh"></div>
+	    </div>
+	    <div class="col-md-4 hide" id="side-content">
+	        <h3 class="border-bottom border-gray pb-2 mb-0">
+	            Additional Stats
+	            <span class="octicon octicon-graph"></span>
+	        </h3>
+			<div class="media text-muted pt-3 custom-flex justify-content-between">
+                <h5 class="my-0">Total Viewers</h5>
                 <strong id="total-viewers">
-                <span class="viewers octicon octicon-person"></span>
+                	<span class="viewers octicon octicon-person"></span>
                 </strong> 
-            </li>
-            <li class="list-group-item d-flex justify-content-between lh-condensed">
-                <div>
-                    <h5 class="my-0" style="cursor:pointer" data-container="body" data-placement="left" data-toggle="popover" id="popover-0">Peak Total Viewers</h5>
-                </div>
+			</div>
+			<div class="media text-muted pt-3 custom-flex justify-content-between">
+                <h5 class="my-0" style="cursor:pointer" data-container="body" data-placement="left" data-toggle="popover" id="popover-0">Peak Total Viewers</h5>
                 <strong id="peak-viewers">
-                <span class="viewers-peak octicon octicon-person"></span>
+                	<span class="viewers-peak octicon octicon-person"></span>
                 </strong>
                 <div id="popover-0-content" class="hide">
                 </div>
-            </li>
-            <li class="list-group-item d-flex justify-content-between lh-condensed">
-                <div>
-                    <h5 class="my-0 success">Uptime</h5>
-                    <!--<small class="text-muted">Brief description</small>-->
-                </div>
+			</div>
+			<div class="media text-muted pt-3 custom-flex justify-content-between">
+                <h5 class="my-0 success">Uptime</h5>
                 <strong id="uptime">
                 	00:00 
                 <span class="octicon octicon-clock"></span>
                 </strong>
-            </li>
-        </ul>
-        <button id="end-tracking" type="button" class="hide btn btn-danger">Stop</button>
-        <button id="save-chart" type="button" class="my-btn hide btn btn-outline-success">Download Chart</button>
-    </div>
-</div>
+			</div>
+			<div class="media text-muted pt-3 custom-flex justify-content-center">
+                <h4 class="my-0 success">Streams</h4>
+            </div>
+
+			<hr class="featurette-divider">
+
+	        <ul class="list-group mb-3 chart-side-bar" id="streamer-stats">
+	        </ul>
+	        
+	        <button id="end-tracking" type="button" class="hide btn btn-danger">Stop</button>
+	        <button id="save-chart" type="button" class="my-btn hide btn btn-outline-success">Download Chart</button>
+	    </div>
+	</div>
 </div>
 @stop
 @section('addScript')
@@ -92,6 +90,7 @@
     var popoverSettings = {
         html: true,
         container: "body",
+        placement: "left",
         content: function() {
             var popoverId = (this.id).split("-");
             console.log(popoverId);
@@ -110,8 +109,10 @@
         }
     });
     //sortable is a function implemented on jquery which gives the user the ability to move items on a list dynamically
+    /*
     $("#streamer-stats").sortable();
     $("#streamer-stats").disableSelection();
+    */
     // Set a callback to run when the Google Visualization API is loaded.
     //google.setOnLoadCallback(initTable);
 
@@ -131,7 +132,7 @@
     var cd = 60;
     var intervalSet = false;
     var peakViewers = 0;
-    var activeChannels = 0;
+    var activeChannels = [];
     var peakViewersChannels;
     var options = {
         title: "Viewership",
@@ -325,10 +326,10 @@
                 channels = res[1];
                 var streamData = processStreamData([formatDate(d)]);
 
-                if (activeChannels === 0/*channelsList.length === 0*/) {
+                if (activeChannels.length === 0) {
                     endTracking();
                 }
-                else if (!streamData["offlineExists"]) {
+                else{
                     if (!setup) {
                         startTracking();
                     }
@@ -367,65 +368,66 @@
         var output = {};
         output["viewershipSum"] = 0;
         output["peakViewersHTML"] = "<ul class='list-group' id='popover-content-0'>";
-        output["offlineExists"] = false;
         output["dataToAdd"] = chartRows;
         output["contributingChannels"] = [];
-
+        activeChannels = [];
+        temp = channelsList;
+        console.log("channels list: " + channelsList);
         for (var i = 0; i < channelsList.length; i++) {
             var chanData = channels[channelsList[i]]; //current channel in the iteration
-            if(chanData["channelInfo"] !== null){
-				var currentViewers = chanData["viewersHist"][1];
-	            var chanId = chanData["channelInfo"]["id"];
-	            //console.log(chanData);
-	            if ((chanData["numChecked"] === 1 || chanData["numChecked"]%60 === 0) && currentViewers >= 0) {
-	                //comeback here
-	                addStreamInfo(chanData);
-	              
+            if (chanData["channelInfo"] !== null) {
+		        var chanId = chanData["channelInfo"]["id"];
+            	if (chanData["status"] === 1) {
+					var currentViewers = chanData["viewersHist"][1];
+		            //add the info of new channels
+		            if (chanData["numChecked"] === 1 && currentViewers >= 0) {
+		                addStreamInfo(chanData);
+		            }
+
+	            	activeChannels.push(chanId);
+
 	                output["dataToAdd"].push(currentViewers);
-	            }
-	            else {
-	            	//if channel is online then add viewerership numbers
-	                if (chanData["status"] === 1) {
-	                    output["dataToAdd"].push(currentViewers);
-	                    output["contributingChannels"].push(chanData["channelInfo"]["channel"]);
-	                }
-	                else {
-	                    if (c in streamInfo["chan"]) {
-	                        $("#status-" + chanId).removeClass("online").addClass("offline");
-	                        $("#status-" + chanId).attr("title", "Offline");
-	                    }
-	                    if (channelsList.length == 1) {
-	                        endTracking();
-	                    }
-	                    else {
-	                        activeChannels--;
-	                    }
-	                    output["offlineExists"] = true;
-	                    return output;
-	                }
-	            }
-	            output["viewershipSum"] += currentViewers;
-	            //create the list elements for channels which contributed to peak viewership
-	            output["peakViewersHTML"] += "<li>" + chanData["channelInfo"]["channel"] + " - " + currentViewers + "</li>";
-		        $("#totalViews-" + chanId).html(chanData["channelInfo"]["totalViews"]);
-		        $("#stream-cat-" + chanId).html(chanData["channelInfo"]["cat"]);
-	            updateStreamInfo(chanData);
+	                output["contributingChannels"].push(chanData["channelInfo"]["channel"]);
+		            output["viewershipSum"] += currentViewers;
+		            //create the list elements for channels which contributed to peak viewership
+		            output["peakViewersHTML"] += "<li>" + chanData["channelInfo"]["channel"] + " - " + currentViewers + "</li>";
+		            updateStreamInfo(chanData);
+		        }
+		        else{
+		        	//indicate a channel that has gone offline
+	                $("#status-" + chanId).removeClass("online").addClass("offline");
+	                $("#status-" + chanId).attr("title", "Offline");
+	                output["dataToAdd"].push(0);	                		        	
+		        }
             }
             else{
-            	channelsList.splice(i, 1);
-            	activeChannels--;
-            	output["offlineExists"] = true;
+            	//remove channel that is offline or does not exists form list from list and channels object
+            	if(channelsList[i] in channels){
+            		delete channels[channelsList[i]];
+            	}
+            	console.log(channels);
+            	temp.splice(i, 1);
             }
         }
         output["peakViewersHTML"] += "</ul>";
+        channelsList = temp;
+        console.log("channels list: " + channelsList);
         return output;
     }
 
     function updateStreamInfo(channelData) {
+    	var chanId = channelData["channelInfo"]["id"];
         var uptime = Math.floor((((new Date()).getTime() / 1000) - channelData["channelInfo"]["createdAt"]) / 60);
-        $("#uptime-" + channelData["channelInfo"]["id"]).html(uptime + " minutes");
-        $("#stream-viewers-" + channelData["channelInfo"]["id"]).html(Math.floor(channelData["viewersHist"][0] / channelData["viewersHist"][3]) +
+        $("#uptime-" + chanId).html(uptime + " minutes");
+        $("#stream-viewers-" + chanId).html(Math.floor(channelData["viewersHist"][0] / channelData["viewersHist"][3]) +
             " Avg <span class='viewers octicon octicon-organization'></span>");
+        if(channelData["numChecked"] % 60 == 0){
+	        $("#total-views-" + chanId).html(channelData["channelInfo"]["totalViews"]);
+	        $("#total-followers" + chanId).html(channelData["channelInfo"]["followers"]);
+	        $("#stream-cat-" + chanId).html(channelData["channelInfo"]["cat"]);
+		    $("#stream-title-" + chanId).html(channelData["channelInfo"]["title"].replace(/'/g, "&apos;"));
+		    $("#num-chatters-" + chanId).html(channelData["channelInfo"]["chatters"]);
+        }
     }
 
     function startTracking() {
@@ -445,7 +447,7 @@
         clearInterval(update);
         //$("#save-chart").addClass("hide");
         intervalSet = false;
-        if (activeChannels === 0) {
+        if (activeChannels === 0 && channelsList.length < 1) {
             clearSideContent();
         }
     }
@@ -492,37 +494,37 @@
         var chanId = data["channelInfo"]["id"];
         console.log(data["channelInfo"]["createdAt"]);
         now.setUTCSeconds(data["channelInfo"]["createdAt"]);
-        var liHTML = "<li class='list-group-item d-flex justify-content-between lh-condensed'>" +
-            "<div><h5 class='my-0 stream-title' id='streamer-" + chanId + "' data-container='body'" +
-            "data-toggle='popover' data-placement='left' title='" + title + "'>" +
-            data["channelInfo"]["channel"] + " <span id='status-" + chanId + 
-            "' class='online octicon octicon-primitive-dot' data-toggle='tooltip' data-placement='top' title='Online'></span></h5>" +
-            "<ul class='list-group' id='popover-content-" + chanId + "' style='display: none'>" +
-            "<li class='list-group-item d-flex justify-content-between'>" +
-            "<div><strong class='my-0 success'>Start</strong></div>" +
-            "<span class='text-muted' id='startDate-" + chanId + "'>" + formatDate(now) + "</span></li>" +
-            "<li class='list-group-item d-flex justify-content-between'>" +
-            "<div><strong class='my-0 success'># Chatters</strong></div>" +
-            "<span class='text-muted' id='numChatters-" + chanId + "'>" + data["channelInfo"]["chatters"] + "</span></li>" +
-            "<li class='list-group-item d-flex justify-content-between'>" +
-            "<div><strong class='my-0 success'>Uptime</strong></div>" +
-            "<span class='text-muted' id='uptime-" + chanId + "'></span></li>" +
-            "<li class='list-group-item d-flex justify-content-between'>" +
-            "<div><strong class='my-0 success'>Total Followers</strong></div>" +
-            "<span class='text-muted' id='totalFollowers-" + chanId + "'>" + data["channelInfo"]["followers"] + "</span></li>" +
-            "<li class='list-group-item d-flex justify-content-between'>" +
-            "<div><strong class='my-0 success'>Total Views</strong></div>" +
-            "<span class='text-muted' id='totalViews-" + chanId + "'>" + data["channelInfo"]["totalViews"] + "</span></li>" +
-            "<li class='list-group-item d-flex justify-content-between'>" +
-            "<div><strong class='my-0 success'>Platform</strong></div>" +
-            "<span class='text-muted' id='platform-" + chanId + "'>" + data["channelInfo"]["platform"] + "</span></li></ul>" +
+        var liHTML = "<li class='list-group-item channel-container custom-flex justify-content-between lh-condensed'>" +
+            "<div><a class='chan-name' data-toggle='collapse' href='#collapse-" + chanId + "' role='button' aria-expanded='false' aria-controls='collapseExample'>"+
+            "<h4 class='my-0' id='streamer-" + chanId + "'>" + data["channelInfo"]["channel"] + " <span id='status-" + chanId + 
+            "' class='online octicon octicon-primitive-dot' data-toggle='tooltip' data-placement='top' title='Online'></span></h4></a>" +
             "<small id='stream-cat-" + chanId + "' class='text-muted'>" + data["channelInfo"]["cat"] + "</small></div>" +
-            "<strong id='stream-viewers-" + chanId + "'></strong></li>";
+            "<strong class='stream-viewers' id='stream-viewers-" + chanId + "'></strong></li>" +
+            "<div class='collapse' id='collapse-" + chanId + "'><ul class='list-group'>"+
+            	"<li class='list-group-item d-flex justify-content-between'>" + 
+            	"<div><strong class='my-0 success'>Title</strong></div>" + 
+            	"<span class='text-muted' id='stream-title-" + chanId + "'>" + title + "</span></li>"+
+	            "<li class='list-group-item d-flex justify-content-between'>" +
+	            "<div><strong class='my-0 success'>Start</strong></div>" +
+	            "<span class='text-muted' id='start-date-" + chanId + "'>" + formatDate(now) + "</span></li>" +
+	            "<li class='list-group-item d-flex justify-content-between'>" +
+	            "<div><strong class='my-0 success'># Chatters</strong></div>" +
+	            "<span class='text-muted' id='num-chatters-" + chanId + "'>" + data["channelInfo"]["chatters"] + "</span></li>" +
+	            "<li class='list-group-item d-flex justify-content-between'>" +
+	            "<div><strong class='my-0 success'>Uptime</strong></div>" +
+	            "<span class='text-muted' id='uptime-" + chanId + "'></span></li>" +
+	            "<li class='list-group-item d-flex justify-content-between'>" +
+	            "<div><strong class='my-0 success'>Total Followers</strong></div>" +
+	            "<span class='text-muted' id='total-followers-" + chanId + "'>" + data["channelInfo"]["followers"] + "</span></li>" +
+	            "<li class='list-group-item d-flex justify-content-between'>" +
+	            "<div><strong class='my-0 success'>Total Views</strong></div>" +
+	            "<span class='text-muted' id='total-views-" + chanId + "'>" + data["channelInfo"]["totalViews"] + "</span></li>" +
+	            "<li class='list-group-item d-flex justify-content-between'>" +
+	            "<div><strong class='my-0 success'>Platform</strong></div>" +
+	            "<span class='text-muted' id='platform-" + chanId + "'>" + data["channelInfo"]["platform"] + "</span></li>" +
+	        "</ul></div>";
         $("#streamer-stats").append(liHTML);
-        $("#streamer-" + chanId).popover(popoverSettings);
-	    $("#title-" + chanId).html(title);
         chartData.addColumn("number", data["channelInfo"]["channel"]);
-
     }
 </script>
 @stop

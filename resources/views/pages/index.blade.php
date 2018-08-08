@@ -5,58 +5,73 @@
 @stop
 
 @section('content')
-    <div class="container">
-        <div class="row justify-content-center welcome-page">
-            @if (Route::has('login'))
-                <div class="top-right links">
-                    @auth
-                        <a href="{{ url('/home') }}">Home</a>
-                    @else
-                        <a href="{{ route('login') }}">Login</a>
-                        <a href="{{ route('register') }}">Register</a>
-                    @endauth
-                </div>
-            @endif
-            <div class="title">
-                Nutcracker
-            </div>
+<div class="container">
+    <div class="row justify-content-center welcome-page">
+        @if (Route::has('login'))
+        <div class="top-right links">
+            @auth
+            <a href="{{ url('/home') }}">Home</a>
+            @else
+            <a href="{{ route('login') }}">Login</a>
+            <a href="{{ route('register') }}">Register</a>
+            @endauth
         </div>
-        <div class="row justify-content-center welcome-page">
-            <div class="subtitle">
-                Viewership statistics and tracking for Livestreams.
-            </div>
+        @endif
+        <div class="title">
+            Nutcracker
         </div>
-          <div id="stream-carousel" class="carousel slide" data-ride="carousel" data-interval="false">
-            <ol class="carousel-indicators">
-              <li data-target="#stream-carousel" data-slide-to="0" class="active"></li>
-              <li data-target="#stream-carousel" data-slide-to="1"></li>
-              <li data-target="#stream-carousel" data-slide-to="2"></li>
-            </ol>
-            <div class="carousel-inner">
-              <div class="carousel-item active">
-                    <div id="twitch-embed-1" align='center'>
-                        <iframe src="https://player.twitch.tv/?channel={{ $topStreams[2] }}" width="800" height="450" frameborder="0" scrolling="no"></iframe>
-                    </div>      
-              </div>
-              <div class="carousel-item">
-                    <div id="twitch-embed-2" align='center'>
-                        <iframe src="https://player.twitch.tv/?channel={{ $topStreams[3] }}" width="800" height="450" frameborder="0" scrolling="no"></iframe>
-                    </div>
-              </div>
-              <div class="carousel-item">
-                <div id="youtube-embed-1" align='center'>
-                    <iframe width="800" height="450" align='center' src="https://www.youtube.com/embed/{{ $topStreams[0] }}" frameborder="0" allowfullscreen></iframe>
-                </div>
-              </div>
-            </div>
-            <a class="carousel-control-prev" href="#stream-carousel" role="button" data-slide="prev">
-              <span class="octicon octicon-chevron-left dark-icon" aria-hidden="true"></span>
-              <span class="sr-only">Previous</span>
-            </a>
-            <a class="carousel-control-next" href="#stream-carousel" role="button" data-slide="next">
-              <span class="octicon octicon-chevron-right dark-icon" aria-hidden="true"></span>
-              <span class="sr-only">Next</span>
-            </a>
-          </div>
     </div>
+    <div class="row justify-content-center welcome-page">
+        <div class="subtitle">
+            Viewership statistics and tracking for Livestreams.
+        </div>
+    </div>
+
+    <hr class="featurette-divier">
+
+    <div id="stream-carousel" class="carousel slide" data-ride="carousel" data-interval="false">
+        <ol class="carousel-indicators">
+            <li data-target="#stream-carousel" data-slide-to="0" class="active"></li>
+            <li data-target="#stream-carousel" data-slide-to="1"></li>
+            <li data-target="#stream-carousel" data-slide-to="2"></li>
+        </ol>
+        <div class="carousel-inner" style="height: 27em !important">
+            <div class="carousel-item active">
+                <div id="twitch-embed-1" align='center'>
+                    <iframe src="https://player.twitch.tv/?channel={{ $topStreams[2] }}" width="720" height="405" frameborder="0" scrolling="no"></iframe>
+                </div>
+            </div>
+            <div class="carousel-item">
+                <div id="twitch-embed-2" align='center'>
+                    <iframe src="https://player.twitch.tv/?channel={{ $topStreams[3] }}" width="720" height="405" frameborder="0" scrolling="no"></iframe>
+                </div>
+            </div>
+            <div class="carousel-item">
+                <div id="youtube-embed-1" align='center'>
+                    <iframe width="720" height="405" align='center' src="https://www.youtube.com/embed/{{ $topStreams[0] }}" frameborder="0" allowfullscreen></iframe>
+                </div>
+            </div>
+        </div>
+        <a class="carousel-control-prev" href="#stream-carousel" role="button" data-slide="prev">
+        <span class="octicon octicon-chevron-left dark-icon" aria-hidden="true"></span>
+        <span class="sr-only">Previous</span>
+        </a>
+        <a class="carousel-control-next" href="#stream-carousel" role="button" data-slide="next">
+        <span class="octicon octicon-chevron-right dark-icon" aria-hidden="true"></span>
+        <span class="sr-only">Next</span>
+        </a>
+    </div>
+
+    <hr class="featurette-divider">
+
+    <div class="row featurette">
+        <div class="col-md-7">
+            <h2 class="featurette-heading">First featurette heading. <span class="text-muted">It'll blow your mind.</span></h2>
+            <p class="lead">Donec ullamcorper nulla non metus auctor fringilla. Vestibulum id ligula porta felis euismod semper. Praesent commodo cursus magna, vel scelerisque nisl consectetur. Fusce dapibus, tellus ac cursus commodo.</p>
+        </div>
+        <div class="col-md-5">
+            <img class="featurette-image img-fluid mx-auto" data-src="holder.js/500x500/auto" alt="Generic placeholder image">
+        </div>
+    </div>
+</div>
 @stop

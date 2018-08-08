@@ -10,6 +10,9 @@
 				<a class="btn btn-primary pull-right" type="button" href="/topStreams" id="refreshTopChannels">Refresh</a>
 			</div>
 		</div>
+
+		<hr class="featurette-divider">
+		
 		<div class="row">
 			<div class="card-deck">
 			@foreach ($data as $stream)

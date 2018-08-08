@@ -28,8 +28,17 @@
         @yield('customCss')
     </head>
     <body>
-        @include('components.navbar')
-        @yield('content')
+        <main role="main">
+            @include('components.navbar')
+            @yield('content')
+
+            <div class="line"></div>
+            <!-- FOOTER -->
+            <footer class="container">
+                <p class="float-right"><a href="#">Back to top</a></p>
+                <p>&copy; Nutcracker &middot; <a href="#">Privacy</a> &middot; <a href="#">Terms</a></p>
+            </footer>
+        </main>
 
         <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
         <script type="text/javascript">

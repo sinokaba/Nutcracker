@@ -23,10 +23,6 @@
     top: 18px;
 }
 
-.content {
-    text-align: center;
-}
-
 .title {
     font-size: 4.2em;
     color: #17252A;
@@ -35,26 +31,4 @@
 
 .subtitle {
     font-size: 1.8em;
-}
-
-.esportsTitles > a {
-    font-size: 1em;
-    font-weight: 600;
-    letter-spacing: .1rem;
-    text-transform: uppercase;
-
-    background-color: #3AAFA9;
-    color: white;
-    padding: 14px 25px;
-    text-align: center; 
-    text-decoration: none;
-    display: inline-block;
-}
-
-.esportsTitles > a:hover {
-    background-color: #2B7A78;
-}
-
-.m-b-md {
-    margin-bottom: 20px;
 }
