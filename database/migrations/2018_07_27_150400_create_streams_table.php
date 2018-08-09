@@ -17,6 +17,9 @@ class CreateStreamsTable extends Migration
             $table->increments('id');
             $table->integer('avg_viewers');
             $table->integer('peak_viewers');
+            $table->bigInteger('followers');
+            $table->bigInteger('total_views');
+            $table->integer('chatters');
             $table->string('channel_id');
             $table->foreign('channel_id')->references('channel_id')->on('channels');
             $table->timestamp('stream_start')->nullable();

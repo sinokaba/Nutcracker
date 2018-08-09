@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use App\TwitchStream;
 use App\YoutubeStream;
@@ -79,7 +80,7 @@ class ApiCallsController extends Controller
     }
 
     public function viewChannel(Request $request){
-		return redirect()->to('channel/'.$request->input('search-term'));
+		return redirect()->to('/channel/'.$request->input('search-term'));
     }
 
 	public function storeChannel($streamInfo){

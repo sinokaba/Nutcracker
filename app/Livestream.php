@@ -1,6 +1,7 @@
 <?php
 
 namespace App;	
+use Illuminate\Support\Facades\Log;
 
 #get chat data url = https://tmi.twitch.tv/group/user/imaqtpie/chatters
 class Livestream{
@@ -38,7 +39,7 @@ class Livestream{
 		return strtotime(date('m/d/Y h:i:s a', time()));
 	}
 
-	function getUrlContents($url){
+	function getUrlContents($url, $header = null, $attempts = 1){
 		if (!function_exists('curl_init')){ 
 			die('CURL is not installed!');
 		}
@@ -48,15 +49,27 @@ class Livestream{
 			CURLOPT_MAXREDIRS      => 10,     // stop after 10 redirects
 			CURLOPT_CONNECTTIMEOUT => 120,    // time-out on connect
 			CURLOPT_TIMEOUT        => 120,    // time-out on response
-			CURLOPT_URL			   => $url
-		); 
-		$ch = curl_init();
+			CURLOPT_URL			   => $url,
+		);
+
+		if($header !== null){
+			$curlOptions[CURLOPT_HTTPHEADER] = $header;
+		}
+
+		//Log::error('get url content ' . $url);
+		error_log($url . ' attempts: ' . $attempts);
+		//Log::error(var_dump($header));
+		
+		$ch = curl_init($url);
 		curl_setopt_array($ch, $curlOptions);
 		$output = curl_exec($ch);
-		if(curl_errno($ch)){
+		if(curl_errno($ch) > 0){
 			print curl_error($ch);
 		}
 		curl_close($ch);
+		if($output == false && $attempts < 3){
+			return getUrlContents($url, $header, $attempts++);
+		}
 		return json_decode($output, true);
 	}
 

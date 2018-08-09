@@ -17,11 +17,11 @@ Route::get('autocomplete', ['as' => 'autocomplete', 'uses' => 'PagesController@a
 Route::get('/blog', 'PostsController@blog');
 Route::get('channel/{name}', 'PagesController@getChannel');
 
-Route::post('/getViewershipStats', 'ApiCallsController@getStats');
-Route::get('/topStreams', 'ApiCallsController@getTopstreams');
-Route::get('/trackAll', 'ApiCallsController@collectTopStreamersData');
-Route::get('channel', ['as' => 'chan', 'uses' => 'ApiCallsController@viewChannel']);
-Route::get('/trackViewership', 'ApiCallsController@index');
+Route::post('/getViewershipStats', 'ChannelsController@getStats');
+Route::get('/topStreams', 'ChannelsController@getTopstreams');
+Route::get('/trackAll', 'ChannelsController@collectTopStreamersData');
+Route::get('channel', ['as' => 'channelSearch', 'uses' => 'ChannelsController@viewChannel']);
+Route::get('/trackViewership', 'ChannelsController@index');
 
 Route::resource('esportsViewers', 'EsportsController');
 ?>

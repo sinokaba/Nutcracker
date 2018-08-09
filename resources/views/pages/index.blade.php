@@ -38,12 +38,12 @@
         <div class="carousel-inner" style="height: 27em !important">
             <div class="carousel-item active">
                 <div id="twitch-embed-1" align='center'>
-                    <iframe src="https://player.twitch.tv/?channel={{ $topStreams[2] }}" width="720" height="405" frameborder="0" scrolling="no"></iframe>
+                    <iframe src="https://player.twitch.tv/?channel={{ $topStreams[2] }}&autoplay=false" width="720" height="405" frameborder="0" scrolling="no"></iframe>
                 </div>
             </div>
             <div class="carousel-item">
                 <div id="twitch-embed-2" align='center'>
-                    <iframe src="https://player.twitch.tv/?channel={{ $topStreams[3] }}" width="720" height="405" frameborder="0" scrolling="no"></iframe>
+                    <iframe src="https://player.twitch.tv/?channel={{ $topStreams[3] }}&autoplay=false" width="720" height="405" frameborder="0" scrolling="no"></iframe>
                 </div>
             </div>
             <div class="carousel-item">

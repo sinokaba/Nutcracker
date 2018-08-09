@@ -7,7 +7,6 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <!--Load the AJAX API-->
         <script type="text/javascript" src="https://www.google.com/jsapi"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.5/jspdf.min.js"></script>
         <script src="{{ asset('js/app.js') }}"></script>
         <script src="{{ asset('js/main.js') }}"></script>
         @yield('customJs')
@@ -34,7 +33,7 @@
 
             <div class="line"></div>
             <!-- FOOTER -->
-            <footer class="container">
+            <footer class="container" style=>
                 <p class="float-right"><a href="#">Back to top</a></p>
                 <p>&copy; Nutcracker &middot; <a href="#">Privacy</a> &middot; <a href="#">Terms</a></p>
             </footer>

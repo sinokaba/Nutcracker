@@ -6,8 +6,9 @@ use Illuminate\Support\Facades\Log;
 class youtubeStream extends Livestream{
 	private $apiKey, $rateLimitReached;
 	private $channelId, $videoId, $categories;
+	public $platform = 'Youtube';
 	//all the urls to make youtube api calls
-	public $APIs = array(
+	public $_API = array(
 		'categories' => 'https://www.googleapis.com/youtube/v3/videoCategories?',
 		'videos' => 'https://www.googleapis.com/youtube/v3/videos?',
 		'search' => 'https://www.googleapis.com/youtube/v3/search?',
@@ -23,7 +24,10 @@ class youtubeStream extends Livestream{
 		//construct a Livestream object which youtube class inherits from
 		parent::__construct($freq);
 		$this->setApiKey(config('app.youtube_api_key'));
-		//only get livestream info if channel or video is given
+		$this->setChannel($youtubeChannel, $video);
+	}
+
+	function setChannel($youtubeChannel, $video){
 		if($youtubeChannel !== null || $video !== null){
 			$this->videoId = $video;
 			//if a youtube channel url is given, then get the video id of livestream
@@ -46,7 +50,7 @@ class youtubeStream extends Livestream{
 			'regionCode' => 'US',
 			'key' => $this->apiKey
 		);
-		return $this->getApiResponse($this->APIs['categories'], $params, true);
+		return $this->getApiResponse($this->_API['categories'], $params, true);
 	}
 
 	function getTopLivestreams($max = 30){
@@ -58,7 +62,7 @@ class youtubeStream extends Livestream{
 			'order' => 'viewcount',
 			'key' => $this->apiKey
 		);
-		return $this->getApiResponse($this->APIs['search'], $params);
+		return $this->getApiResponse($this->_API['search'], $params);
 	}
 
 	function getChannelDetails($channel = null){
@@ -68,7 +72,7 @@ class youtubeStream extends Livestream{
 			'id' => $chan,
 			'key' => $this->apiKey
 		);
-		return $this->getApiResponse($this->APIs['channels'], $params);
+		return $this->getApiResponse($this->_API['channels'], $params);
 	}
 
 	function getChatDetails($chatId = null){
@@ -78,7 +82,7 @@ class youtubeStream extends Livestream{
 			'liveChatId' => $chatId,
 			'key' => $this->apiKey
 		);
-		return $this->getApiResponse($this->APIs['live.chat'], $params, false, false);
+		return $this->getApiResponse($this->_API['live.chat'], $params, false, false);
 	}
 
 	function getLivestreamDetails($liveVideo){
@@ -87,7 +91,7 @@ class youtubeStream extends Livestream{
 			'id' => $liveVideo,
 			'key' => $this->apiKey
 		);
-		return $this->getApiResponse($this->APIs['videos'], $params);
+		return $this->getApiResponse($this->_API['videos'], $params);
 	}
 
 	function getLiveVideoByChannel($chan){
@@ -98,13 +102,13 @@ class youtubeStream extends Livestream{
 			'type' => 'video',
 			'key' => $this->apiKey
 		);
-		return $this->getApiResponse($this->APIs['search'], $params);
+		return $this->getApiResponse($this->_API['search'], $params);
 	}
 
-	function getApiResponse($api, $params, $cat = false, $getItems = true){
+	function getApiResponse($url, $params, $cat = false, $getItems = true){
 		Log::error($this->videoId);
-		$result = $this->getUrlContents($api . http_build_query($params));
-		if($result === null || !array_key_exists('items', $result) || count($result['items']) === 0){
+		$result = $this->getUrlContents($url . http_build_query($params));
+		if($result === null || !array_key_exists('items', $result) || count($result['items']) == 0){
 			return null;
 		} 
 		if(!$getItems){
@@ -145,13 +149,15 @@ class youtubeStream extends Livestream{
 			'id' => $this->channelId,
 			'cat' => $this->game,
 			'title' => $streamInfo['title'],
+			'logo' => $channelStats['snippet']['thumbnails']['high'],
+			'url' => 'https://www.youtube.com/channel/' . $this->channelId,
 			'createdAt' => strtotime($livestreamInfo['liveStreamingDetails']['actualStartTime']),
 			'followers' => $channelStats['statistics']['subscriberCount'],
 			'totalViews' => $channelStats['statistics']['viewCount'],
 			'channelCreation' => $channelStats['snippet']['publishedAt'],
 			'channelId' => $this->channelId,
-			'platform' => 'Youtube',
-			'chatters' => $chatters === null ? 0 : $chatters['pageInfo']['totalResults']
+			'platform' => $this->platform,
+			'chatters' => ($chatters === null ? 0 : $chatters['pageInfo']['totalResults']) + $channelStats['statistics']['commentCount']
 		);
 	}
 
@@ -177,7 +183,7 @@ class youtubeStream extends Livestream{
 		if($this->isOffline()){
 			return -1;
 		}
-	    return (int)file_get_contents($this->APIs['live.viewers'] . $this->videoId);					
+	    return (int)file_get_contents($this->_API['live.viewers'] . $this->videoId);					
 	}
 
 	function trackViewership($timeInMinutes){

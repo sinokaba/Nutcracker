@@ -23,7 +23,7 @@
                 <a class="nav-link" href="{{ url('/blog') }}">Blog</a>
             </li>
         </ul>
-        <form class="form-inline mt-2 mt-md-0" action="{{ URL::to('channel') }}" method="GET">
+        <form class="form-inline mt-2 mt-md-0" action="{{ URL::route('channelSearch') }}" method="GET">
             <input class="form-control mr-sm-2" type="text" name="search-term" id="search-channel" placeholder="Channel" aria-label="Search">
             <input type="hidden" name="_token" value="{{ csrf_token() }}">
             <button class="my-btn btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>

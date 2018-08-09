@@ -5,79 +5,124 @@ use Illuminate\Support\Facades\Log;
 
 class TwitchStream extends Livestream{
 	private $twitchClientId;
-	private $urlBase = 'https://api.twitch.tv/kraken/streams/';
-	
+	public $_API = array(
+		'streams' => 'https://api.twitch.tv/kraken/streams/',
+		'users' => 'https://api.twitch.tv/kraken/users?',
+		'channels' => 'https://api.twitch.tv/kraken/channels/',
+		'chat' => 'https://tmi.twitch.tv/group/user/',
+		'games' => 'https://api.twitch.tv/kraken/games/',
+		'search' => 'https://api.twitch.tv/kraken/search/',
+		'videos' => 'https://api.twitch.tv/kraken/videos'
+    );
+    private $videoIdPattern = '/^[v]?[0-9]+/';
+    private $userIdPattern = '/^[0-9]+/';
+	private $urlBase = 'https://api.twitch.tv/kraken';
+	private $userExists;
+	private $header;
+	private $streamInfo;
+	public $platform = 'Twitch';
+
 	function __construct($twitchChannel, $freq = null){
 		parent::__construct($freq);
-		$this->twitchClientId = config('app.twitch_client_id');
+		$this->setHeader();
 		$this->channelName = $twitchChannel;
 		if($this->channelName !== null){
 			$this->isOffline();
+			$this->getUserByName();
 		}
 	}
 
-	function getStreamDetails($channel = null){
-		$params = array(
-			'client_id' => $this->twitchClientId
+	function setHeader(){
+		$this->twitchClientId = config('app.twitch_client_id');
+		$this->header = array(
+			0 => 'Accept: application/vnd.twitchtv.v5+json',
+			1 => 'Client-ID: ' . $this->twitchClientId 
 		);
-		$chan = $channel === null ? $this->channelName : $channel;
-		Log::error("twitch chan = " . $chan);
-		$res = $this->getUrlContents($this->urlBase . $chan . '?' . http_build_query($params));
-		//Log::error(var_dump($res));
-		if($res !== null){
-			return $res['stream'];
+	}
+
+	function doesUserExist(){
+		return $this->userExists;
+	}
+
+	function getClientId(){
+		return $this->twitchClientId;
+	}
+
+	function getApiResponse($url, $params = null){
+		if($params === null){
+			return $this->getUrlContents($url, $this->header);
 		}
-		else{
-			if(is_array($res)){
-				Log::error($chan . implode($array));
-			}
-			else{
-				Log::error($chan . $res);
-			}
+		return $this->getUrlContents($url . http_build_query($params), $this->header);
+	}
+
+	function getUserByName($user = null){
+		$user = $user === null ? $this->channelName : $user;
+		$params = array('login' => $user);
+		$result = $this->getApiResponse($this->_API['users'], $params);
+		if($result['users'] === null || count($result['users']) == 0){
+			$this->userExists = false;
 			return null;
 		}
+		return $result;
+	}
+
+	function getStreamDetails($channelId = null){
+		if($channelId == null){
+			$user = $this->getUserByName($this->channelName);
+			if($user === null){
+				return null;
+			}
+			$channelId = $user['users'][0]['_id'];
+		}
+		Log::error("twitch chan = " . $channelId);
+
+		$stream = $this->getApiResponse($this->_API['streams'] . $channelId);
+		return $stream['stream'];
 	}
 
 	function getTopLivestreams($limit = 25){
-		return $this->getUrlContents($this->urlBase.'?limit='.$limit.'&client_id='.$this->twitchClientId);
+		$params = array('limit' => $limit);
+		return $this->getApiResponse($this->_API['streams'] . '?', $params);
 	}
 
 	function getNumChatters(){
 		Log::error($this->channelName);
-		return $this->getUrlContents('https://tmi.twitch.tv/group/user/' . $this->channelName . '/chatters');
+		return $this->getUrlContents($this->_API['chat'] . $this->channelName . '/chatters');
 	}
 
 	function getStreamTitle(){
 		if(!$this->isOffline()){
-			$res = $this->getStreamDetails();
-			return $res['channel']['status'];
+			return $this->getStreamDetails()['channel']['status'];
 		}
 		return null;
 	}
 
 	function getStreamGame(){
 		if(!$this->isOffline()){
-			$res = $this->getStreamDetails();
-			return $res['game'];
+			return $this->getStreamDetails()['game'];
 		}
 		return null;
 	}
 
 	function getStreamInfo(){
 		if(!$this->isOffline()){
-			$stats = $this->getStreamDetails();
+			$chatters = $this->getNumChatters();
+			//error_log('chatters: ' . $chatters['chatter_count']);
+			//error_log(var_dump($chatters));
 			return array(
-				'channel' => $stats['channel']['name'],
-				'id' => $stats['channel']['_id'],
-				'cat' => $stats['game'],
-				'title' => $stats['channel']['status'],
-				'createdAt' => strtotime($stats['created_at']), 
-				'followers' => $stats['channel']['followers'], 
-				'totalViews' => $stats['channel']['views'],
-				'channelCreation' => $stats['channel']['created_at'],
-				'channelId' => $stats['channel']['_id'],
-				'platform' => 'Twitch',
-				'chatters' => $this->getNumChatters()['chatter_count']
+				'channel' => $this->streamInfo['channel']['name'],
+				'id' => $this->streamInfo['channel']['_id'],
+				'cat' => $this->streamInfo['game'],
+				'title' => $this->streamInfo['channel']['status'],
+				'logo' => $this->streamInfo['channel']['logo'],
+				'url' => $this->streamInfo['channel']['url'],
+				'createdAt' => strtotime($this->streamInfo['created_at']), 
+				'followers' => $this->streamInfo['channel']['followers'], 
+				'totalViews' => $this->streamInfo['channel']['views'],
+				'channelCreation' => $this->streamInfo['channel']['created_at'],
+				'channelId' => $this->streamInfo['channel']['_id'],
+				'platform' => $this->platform,
+				'chatters' => $chatters === null ? 0 : $chatters['chatter_count']
 				);		
 		}		
 		return null;
@@ -87,13 +132,12 @@ class TwitchStream extends Livestream{
 		if($this->isOffline()){
 			return -1;
 		}
-		$stats = $this->getStreamDetails();
-		return $stats['viewers'];
+		return $this->getStreamDetails()['viewers'];
 	}
 
 	function isOffline(){
-		$stats = $this->getStreamDetails();
-		if(is_null($stats)){
+		$this->streamInfo = $this->getStreamDetails();
+		if($this->streamInfo === null){
 			$this->offline = true;
 		}
 		else{

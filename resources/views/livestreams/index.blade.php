@@ -35,7 +35,7 @@
     <div class="row">
         <div class="col-md-8">
             <h3 id="chart-title"></h3>
-            <div id="curve_chart" download="nutcracker_chart.jpg" style="width: 100%; height: 70vh"></div>
+            <div id="viewership-chart" download="nutcracker_chart.jpg" style="width: 100%; height: 70vh"></div>
         </div>
         <div class="col-md-4 hide" id="side-content">
             <h3 class="border-bottom border-gray pb-2 mb-0">
@@ -45,13 +45,13 @@
             <div class="media text-muted pt-3 custom-flex justify-content-between">
                 <h5 class="my-0">Total Viewers</h5>
                 <strong id="total-viewers">
-                    <span class="viewers octicon octicon-person"></span>
+                    <span class="viewers octicon octicon-organization"></span>
                 </strong> 
             </div>
             <div class="media text-muted pt-3 custom-flex justify-content-between">
                 <h5 class="my-0" style="cursor:pointer" data-container="body" data-placement="left" data-toggle="popover" id="popover-0">Peak Total Viewers</h5>
                 <strong id="peak-viewers">
-                    <span class="viewers-peak octicon octicon-person"></span>
+                    <span class="viewers-peak octicon octicon-organization"></span>
                 </strong>
                 <div id="popover-0-content" class="hide">
                 </div>
@@ -212,7 +212,7 @@
                     activeChannels++;
                     //console.log(channels);
                     $(formId)[0].classList.add("was-validated");
-                    if (channelsList.length == 1) {
+                    if (channelsList.length == 1 && activeChannels == 0) {
                         $("#main-loader").toggleClass("hide");
                         start = Math.floor(Date.now() / 60000);
                         initTable();
@@ -266,8 +266,7 @@
     }
 
     function drawChart() {
-        //php function needs to output the specified number of columns corressponding with number of users to look up
-        chart = new google.visualization.LineChart(document.getElementById("curve_chart"));
+        chart = new google.visualization.LineChart(document.getElementById("viewership-chart"));
         chart.draw(chartData, options);
     }
 
@@ -375,9 +374,9 @@
         console.log("channels list: " + channelsList);
         for (var i = 0; i < channelsList.length; i++) {
             var chanData = channels[channelsList[i]]; //current channel in the iteration
+            var currentViewers = chanData["viewersHist"][1];            
             if (chanData["channelInfo"] !== null) {
                 var chanId = chanData["channelInfo"]["id"];
-                var currentViewers = chanData["viewersHist"][1];
                 if (chanData["status"] === 1) {
                     //add the info of new channels
                     if (chanData["numChecked"] === 1 && currentViewers >= 0) {
@@ -418,8 +417,11 @@
         var chanId = channelData["channelInfo"]["id"];
         var uptime = Math.floor((((new Date()).getTime() / 1000) - channelData["channelInfo"]["createdAt"]) / 60);
         $("#uptime-" + chanId).html(uptime + " minutes");
-        $("#stream-viewers-" + chanId).html(Math.floor(channelData["viewersHist"][0] / channelData["viewersHist"][3]) +
-            " Avg <span class='viewers octicon octicon-organization'></span>");
+        $("#stream-viewers-" + chanId).html(channelData["viewersHist"][1] + " <span class='viewers octicon octicon-person'></span>");
+        $("#stream-avg-" + chanId).html(Math.floor(channelData["viewersHist"][0] / channelData["viewersHist"][3]));
+        if(channelData["viewersHist"][2] > $("#stream-peak-" + chanId).text()){
+            $("#stream-peak-" + chanId).html(channelData["viewersHist"][2]);
+        }
         if(channelData["numChecked"] % 60 == 0){
             $("#total-views-" + chanId).html(channelData["channelInfo"]["totalViews"]);
             $("#total-followers" + chanId).html(channelData["channelInfo"]["followers"]);
@@ -503,6 +505,12 @@
                 "<li class='list-group-item d-flex justify-content-between'>" + 
                 "<div><strong class='my-0 success'>Title</strong></div>" + 
                 "<span class='text-muted' id='stream-title-" + chanId + "'>" + title + "</span></li>"+
+                "<li class='list-group-item d-flex justify-content-between'>" + 
+                "<div><strong class='my-0 success'>Average Viewers</strong></div>" + 
+                "<span class='text-muted' id='stream-avg-" + chanId + "'></span></li>"+
+                "<li class='list-group-item d-flex justify-content-between'>" + 
+                "<div><strong class='my-0 success'>Peak Viewers</strong></div>" + 
+                "<span class='text-muted' id='stream-peak-" + chanId + "'></span></li>"+                
                 "<li class='list-group-item d-flex justify-content-between'>" +
                 "<div><strong class='my-0 success'>Start</strong></div>" +
                 "<span class='text-muted' id='start-date-" + chanId + "'>" + formatDate(now) + "</span></li>" +

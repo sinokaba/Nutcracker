@@ -7,6 +7,7 @@ use App\Livestream;
 use App\Channel;
 use App\twitchStream;
 use App\youtubeStream;
+use App\Stream;
 use Illuminate\Support\Facades\Log;
 
 //returns specified route
@@ -36,8 +37,21 @@ class PagesController extends Controller
     public function getChannel($channelName){
         Log::error($channelName);
         $channel = Channel::where('channel_name', $channelName)->first();
+        $streams = Stream::where('channel_id', $channel->channel_id)->get();
+        Log::info('num streams: ' . count($streams));
         if($channel !== null){
-            return view('pages.channel')->with('chan', $channel);
+            if($channel->platform == 0){
+                $channel['url'] = 'https://www.twitch.tv/' . $channel->channel_name;
+            }
+            else{
+                $channel['url'] = 'https://www.youtube.com/channel/' . $channel->channel_id;
+            }
+            $data = array(
+                "chan" => $channel,
+                "streams" => $streams
+            );
+            //Log::error(var_dump($data));
+            return view('pages.channel')->with($data);
         }
         $searchResults = Channel::where('channel_name','LIKE','%'.$term.'%')->take(10)->get();
         //return view('pages.search')->with('results', $searchResults);

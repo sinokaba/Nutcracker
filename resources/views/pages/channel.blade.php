@@ -13,54 +13,44 @@
         <!-- Sidebar Holder -->
         <nav id="sidebar">
             <div class="sidebar-header">
-                <h3>{{ $chan->platform === 0 ? 'Twitch Channel' : 'Youtube Channel' }}</h3>
+                <h3>{{ $chan->platform === 0 ? 'Twitch Streamer' : 'Youtube Streamer' }}</h3>
             </div>
 
             <ul class="list-unstyled components">
-                <p>Dummy Heading</p>
                 <li class="active">
-                    <a href="#homeSubmenu" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle">Home</a>
-                    <ul class="collapse list-unstyled" id="homeSubmenu">
+                    <a href="#"><h4>Status: Offline</h4></a>
+                </li>            	
+                <li>
+                    <a href="#">Rank: #1</a>
+                </li>
+                <li>
+                    <a href="#">Rating</a>
+                </li>
+                <li>
+                    <a href="#">Stream</a>
+                </li>                             
+                <li>
+                    <a href="#past-stream-dates" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle">Last Streams</a>
+                    <ul class="collapse list-unstyled" id="past-stream-dates">
                         <li>
-                            <a href="#">Home 1</a>
+                            <a href="#">8/7/2018 2:30pm</a>
                         </li>
                         <li>
-                            <a href="#">Home 2</a>
-                        </li>
-                        <li>
-                            <a href="#">Home 3</a>
+                            <a href="#">8/5/2018 5:30pm</a>
                         </li>
                     </ul>
                 </li>
                 <li>
-                    <a href="#">About</a>
-                    <a href="#pageSubmenu" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle">Pages</a>
-                    <ul class="collapse list-unstyled" id="pageSubmenu">
-                        <li>
-                            <a href="#">Page 1</a>
-                        </li>
-                        <li>
-                            <a href="#">Page 2</a>
-                        </li>
-                        <li>
-                            <a href="#">Page 3</a>
-                        </li>
-                    </ul>
-                </li>
-                <li>
-                    <a href="#">Portfolio</a>
-                </li>
-                <li>
-                    <a href="#">Contact</a>
+                    <a href="#">Last Updated: 8/8/2018</a>
                 </li>
             </ul>
 
             <ul class="list-unstyled CTAs">
                 <li>
-                    <a href="https://bootstrapious.com/tutorial/files/sidebar.zip" class="download">Download source</a>
+                    <a href="{{ $chan->url }}" class="download">Channel Link</a>
                 </li>
                 <li>
-                    <a href="https://bootstrapious.com/p/bootstrap-sidebar" class="article">Back to article</a>
+                    <a href="https://bootstrapious.com/p/bootstrap-sidebar" class="article">Favourite</a>
                 </li>
             </ul>
         </nav>
@@ -79,28 +69,98 @@
         	</div>
 
         	<hr class="feauturette-line">
-        	
-            <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
-            <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
 
-            <div class="line"></div>
-
-            <h2>Lorem Ipsum Dolor</h2>
-            <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
-
-            <div class="line"></div>
-
-            <h2>Lorem Ipsum Dolor</h2>
-            <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
-
-            <div class="line"></div>
-
-            <h3>Lorem Ipsum Dolor</h3>
-            <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
-       
+			<div class="card-group">
+			    <div class="card">
+			        <div class="card-body">
+			            <h5 class="card-title">Creation Date</h5>
+			            <p class="card-text">{{ $chan->creation }} </p>
+			        </div>
+			        <div class="card-footer">
+			            <small class="text-muted">Last updated 3 mins ago</small>
+			        </div>
+			    </div>
+			    <div class="card">
+			        <div class="card-body">
+			            <h5 class="card-title">Followers</h5>
+			            <p class="card-text">{{ $chan->followers }}</p>
+			        </div>
+			        <div class="card-footer">
+			            <small class="text-muted">Last updated 3 mins ago</small>
+			        </div>
+			    </div>
+			    <div class="card">
+			        <div class="card-body">
+			            <h5 class="card-title">Total Views</h5>
+			            <p class="card-text">{{ $chan->total_views }}</p>
+			        </div>
+			        <div class="card-footer">
+			            <small class="text-muted">Last updated 3 mins ago</small>
+			        </div>
+			    </div>
+			</div>
+			<div class="card-group">
+			    <div class="card">
+			        <div class="card-body">
+			            <h5 class="card-title">Peak Viewers</h5>
+			            <p class="card-text">1000</p>
+			        </div>
+			        <div class="card-footer">
+			            <small class="text-muted">Last updated 3 mins ago</small>
+			        </div>
+			    </div>
+			    <div class="card">
+			        <div class="card-body">
+			            <h5 class="card-title">Average Viewers</h5>
+			            <p class="card-text">2123</p>
+			        </div>
+			        <div class="card-footer">
+			            <small class="text-muted">Last updated 3 mins ago</small>
+			        </div>
+			    </div>
+			    <div class="card">
+			        <div class="card-body">
+			            <h5 class="card-title">Chat Activty</h5>
+			            <p class="card-text">80%</p>
+			        </div>
+			        <div class="card-footer">
+			            <small class="text-muted">Last updated 3 mins ago</small>
+			        </div>
+			    </div>
+			</div>	
+			<div class="card-group">
+			    <div class="card">
+			        <div class="card-body">
+			            <h5 class="card-title">Average Hours streamed per week</h5>
+			            <p class="card-text">15</p>
+			        </div>
+			        <div class="card-footer">
+			            <small class="text-muted">Last updated 3 mins ago</small>
+			        </div>
+			    </div>
+			    <div class="card">
+			        <div class="card-body">
+			            <h5 class="card-title">Hours streamed this week</h5>
+			            <p class="card-text">10</p>
+			        </div>
+			        <div class="card-footer">
+			            <small class="text-muted">Last updated 3 mins ago</small>
+			        </div>
+			    </div>
+			    <div class="card">
+			        <div class="card-body">
+			            <h5 class="card-title">Most hours streamed a day</h5>
+			            <p class="card-text">24}</p>
+			        </div>
+			        <div class="card-footer">
+			            <small class="text-muted">Last updated 3 mins ago</small>
+			        </div>
+			    </div>
+			</div>		
+            <p>Stream Category breakdown</p>
 
 			<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-			    <h1 class="h2">Dashboard</h1>
+			    <h1 class="h2">Broadcast History</h1>
 			    <div class="btn-toolbar mb-2 mb-md-0">
 			        <div class="btn-group mr-2">
 			            <button class="btn btn-sm btn-outline-secondary">Share</button>
@@ -112,17 +172,18 @@
 			        </button>
 			    </div>
 			</div>
-			<canvas class="my-4 w-100" id="myChart" width="900" height="380"></canvas>
-			<h2>Section title</h2>
+			<div class="my-4 w-100" id="broadcast-history" width="900" height="300"></div>
+			<h2>Growth</h2>
 			<div class="table-responsive">
 			    <table class="table table-striped table-sm">
 			        <thead>
 			            <tr>
-			                <th>#</th>
-			                <th>Header</th>
-			                <th>Header</th>
-			                <th>Header</th>
-			                <th>Header</th>
+			                <th>Date</th>
+			                <th>Views</th>
+			                <th>Followers</th>
+			                <th>Average Viewers</th>
+			                <th>Peak Viewers</th>
+			                <th>Category</th>
 			            </tr>
 			        </thead>
 			        <tbody>
@@ -132,6 +193,7 @@
 			                <td>ipsum</td>
 			                <td>dolor</td>
 			                <td>sit</td>
+			                <td>idk</td>
 			            </tr>
 			            <tr>
 			                <td>1,002</td>
@@ -139,6 +201,7 @@
 			                <td>consectetur</td>
 			                <td>adipiscing</td>
 			                <td>elit</td>
+			                <td>idk</td>
 			            </tr>
 			            <tr>
 			                <td>1,003</td>
@@ -146,97 +209,7 @@
 			                <td>nec</td>
 			                <td>odio</td>
 			                <td>Praesent</td>
-			            </tr>
-			            <tr>
-			                <td>1,003</td>
-			                <td>libero</td>
-			                <td>Sed</td>
-			                <td>cursus</td>
-			                <td>ante</td>
-			            </tr>
-			            <tr>
-			                <td>1,004</td>
-			                <td>dapibus</td>
-			                <td>diam</td>
-			                <td>Sed</td>
-			                <td>nisi</td>
-			            </tr>
-			            <tr>
-			                <td>1,005</td>
-			                <td>Nulla</td>
-			                <td>quis</td>
-			                <td>sem</td>
-			                <td>at</td>
-			            </tr>
-			            <tr>
-			                <td>1,006</td>
-			                <td>nibh</td>
-			                <td>elementum</td>
-			                <td>imperdiet</td>
-			                <td>Duis</td>
-			            </tr>
-			            <tr>
-			                <td>1,007</td>
-			                <td>sagittis</td>
-			                <td>ipsum</td>
-			                <td>Praesent</td>
-			                <td>mauris</td>
-			            </tr>
-			            <tr>
-			                <td>1,008</td>
-			                <td>Fusce</td>
-			                <td>nec</td>
-			                <td>tellus</td>
-			                <td>sed</td>
-			            </tr>
-			            <tr>
-			                <td>1,009</td>
-			                <td>augue</td>
-			                <td>semper</td>
-			                <td>porta</td>
-			                <td>Mauris</td>
-			            </tr>
-			            <tr>
-			                <td>1,010</td>
-			                <td>massa</td>
-			                <td>Vestibulum</td>
-			                <td>lacinia</td>
-			                <td>arcu</td>
-			            </tr>
-			            <tr>
-			                <td>1,011</td>
-			                <td>eget</td>
-			                <td>nulla</td>
-			                <td>Class</td>
-			                <td>aptent</td>
-			            </tr>
-			            <tr>
-			                <td>1,012</td>
-			                <td>taciti</td>
-			                <td>sociosqu</td>
-			                <td>ad</td>
-			                <td>litora</td>
-			            </tr>
-			            <tr>
-			                <td>1,013</td>
-			                <td>torquent</td>
-			                <td>per</td>
-			                <td>conubia</td>
-			                <td>nostra</td>
-			            </tr>
-			            <tr>
-			                <td>1,014</td>
-			                <td>per</td>
-			                <td>inceptos</td>
-			                <td>himenaeos</td>
-			                <td>Curabitur</td>
-			            </tr>
-			            <tr>
-			                <td>1,015</td>
-			                <td>sodales</td>
-			                <td>ligula</td>
-			                <td>in</td>
-			                <td>libero</td>
+			                <td>idk</td>
 			            </tr>
 			        </tbody>
 			    </table>
@@ -251,5 +224,37 @@
                 $(this).toggleClass('active');
             });
         });
+		google.load("visualization", "1", {
+	        "packages": ["corechart"]
+	    });	      	
+		google.setOnLoadCallback(drawChart);
+
+	    function drawChart() {
+
+			var data = new google.visualization.DataTable();
+			data.addColumn('string', 'Date');
+			data.addColumn('number', 'Average Viewers');
+			data.addColumn('number', 'Peak Viewers');
+
+		    var options = {
+		        vAxis: {
+		            title: "Viewers"
+		        },
+		        hAxis: {
+		            title: "Date"
+		        },
+		        legend: "bottom",
+		        height: 450
+		    };
+		    
+		    for(var i = 0; i < {!! $streams !!}.length; i++){
+		    	data.addRow([{!! $streams !!}[i]['stream_start'], {!! $streams !!}[i]['avg_viewers'], {!! $streams !!}[i]['peak_viewers']]);
+		    }
+			
+			//console.log({!! $streams !!});
+
+	        var chart = new google.visualization.LineChart(document.getElementById("broadcast-history"));
+	        chart.draw(data, options);
+		}
     </script>
 @stop
