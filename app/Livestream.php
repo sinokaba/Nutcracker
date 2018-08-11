@@ -68,7 +68,10 @@ class Livestream{
 		}
 		curl_close($ch);
 		if($output == false && $attempts < 3){
-			return getUrlContents($url, $header, $attempts++);
+			return $this->getUrlContents($url, $header, $attempts++);
+		}
+		if($output == false){
+			return null;
 		}
 		return json_decode($output, true);
 	}
