@@ -7,6 +7,7 @@ class youtubeStream extends Livestream{
 	private $apiKey, $rateLimitReached;
 	private $channelId, $videoId, $categories;
 	public $platform = 'Youtube';
+	private $maxStreams = 50;
 	//all the urls to make youtube api calls
 	public $_API = array(
 		'categories' => 'https://www.googleapis.com/youtube/v3/videoCategories?',
@@ -35,7 +36,7 @@ class youtubeStream extends Livestream{
 				$liveChanInfo = $this->getLiveVideoByChannel($youtubeChannel);
 				$this->videoId = $liveChanInfo[0]['id']['videoId'];
 			}
-			Log::error($this->videoId); //log the video id of current youtube class, to help debug any unforseen errors
+			//Log::error($this->videoId); //log the video id of current youtube class, to help debug any unforseen errors
 			$liveVideoInfo = $this->getLivestreamDetails($this->videoId);
 			$this->channelId = $liveVideoInfo[0]['snippet']['channelId'];
 			$this->channelName = $liveVideoInfo[0]['snippet']['channelTitle'];
@@ -54,15 +55,41 @@ class youtubeStream extends Livestream{
 	}
 
 	function getTopLivestreams($max = 30){
-		$params = array(
-			'part' => 'snippet',
-			'eventType' => 'live',
-			'type' => 'video',
-			'maxResults' => min($max, 50),
-			'order' => 'viewcount',
-			'key' => $this->apiKey
-		);
-		return $this->getApiResponse($this->_API['search'], $params);
+		if($max <= $this->maxStreams){
+			$params = array(
+				'part' => 'snippet',
+				'eventType' => 'live',
+				'type' => 'video',
+				'maxResults' => $max,
+				'order' => 'viewcount',
+				'key' => $this->apiKey
+			);
+			return $this->getApiResponse($this->_API['search'], $params);
+		}
+		$numLeft = $max;
+		$nextPage = null;
+		$allData = array();
+		while($numLeft > 0){
+			$numLeft -= $this->maxStreams;
+			$params = array();
+			if($nextPage !== null){
+				$params['pageToken'] = $nextPage;					
+			}
+			$params['part'] = 'snippet';
+			$params['eventType'] = 'live';
+			$params['type'] = 'video';
+			$params['maxResults'] = $this->maxStreams;
+			$params['order'] = 'viewcount';
+			$params['key'] = $this->apiKey;
+
+			$data = $this->getApiResponse($this->_API['search'], $params, false, false);
+			$nextPage = $data['nextPageToken'];
+			if($data['items'] == null || count($data['items']) == 0){
+				return $allData;
+			}
+			$allData = array_merge($data['items'], $allData);
+		}
+		return $allData;
 	}
 
 	function getChannelDetails($channel = null){
@@ -106,7 +133,7 @@ class youtubeStream extends Livestream{
 	}
 
 	function getApiResponse($url, $params, $cat = false, $getItems = true){
-		Log::error($this->videoId);
+		//Log::error($this->videoId);
 		$result = $this->getUrlContents($url . http_build_query($params));
 		if($result === null || !array_key_exists('items', $result) || count($result['items']) == 0){
 			return null;

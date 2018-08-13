@@ -56,8 +56,7 @@ class Livestream{
 			$curlOptions[CURLOPT_HTTPHEADER] = $header;
 		}
 
-		//Log::error('get url content ' . $url);
-		error_log($url . ' attempts: ' . $attempts);
+		//Log::error($url . ' attempts: ' . $attempts);
 		//Log::error(var_dump($header));
 		
 		$ch = curl_init($url);

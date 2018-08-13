@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Session;
 use Illuminate\Http\Request;
 use App\Livestream;
 use App\Channel;
@@ -24,14 +25,28 @@ class PagesController extends Controller
 			array_push($topStreams, $vid['id']['videoId']);
 		}
 		for($i = 0; $i < 2; $i++){
-			$stream = $topTwitch['streams'][$i];
-			array_push($topStreams, $topTwitch['streams'][$i]['channel']['name']);
+			$stream = new twitchStream(null, $topTwitch[$i]['user_id']);
+            $streamInfo = $stream->getStreamInfo();
+			array_push($topStreams, $streamInfo['channel']);
 		}
     	return view('pages.index')->with('topStreams', $topStreams);
     }
 
     public function about(){
     	return view('pages.about');
+    }
+
+    public function trackStreams(){
+        $streams = Session::get('streams');
+        if($streams !== null){
+            $data = array(
+                'twitch' => $streams[0],
+                'youtube' => $streams[1],
+                'id' => $streams[2]
+            );
+            return view('livestreams.trackStreams')->with($data);
+        }
+        return abort(404);
     }
 
     public function getChannel($channelName){
@@ -47,8 +62,8 @@ class PagesController extends Controller
                 $channel['url'] = 'https://www.youtube.com/channel/' . $channel->channel_id;
             }
             $data = array(
-                "chan" => $channel,
-                "streams" => $streams
+                'chan' => $channel,
+                'streams' => $streams
             );
             //Log::error(var_dump($data));
             return view('pages.channel')->with($data);

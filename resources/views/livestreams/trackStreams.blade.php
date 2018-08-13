@@ -32,12 +32,14 @@
     <div class="row justify-content-center hide" id="main-loader">
         <div class="main-loader"></div>
     </div>
-    <div class="row">
+    <div class="row invis" id="tracking-content">
         <div class="col-md-8">
             <h3 id="chart-title"></h3>
-            <div id="viewership-chart" download="nutcracker_chart.jpg" style="width: 100%; height: 70vh"></div>
+            <div id="viewership-chart-container" style="position: relative; width: 100%; height: 70vh">
+                <canvas id="viewership-chart" download="nutcracker_chart.jpg">
+            </div>
         </div>
-        <div class="col-md-4 hide" id="side-content">
+        <div class="col-md-4" id="side-content">
             <h3 class="border-bottom border-gray pb-2 mb-0">
                 Additional Stats
                 <span class="octicon octicon-graph"></span>
@@ -79,14 +81,20 @@
 </div>
 @stop
 @section('addScript')
-<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
 <script type="text/javascript">
-    
-    //enable tooltips
-    $(function(){
-        $("[data-toggle='tooltip']").tooltip()
-    });
+    myStorage = window.localStorage;
 
+    //sortable is a function implemented on jquery which gives the user the ability to move items on a list dynamically
+    /*
+    $("#streamer-stats").sortable();
+    $("#streamer-stats").disableSelection();
+    */
+    // Set a callback to run when the Google Visualization API is loaded.
+    //google.setOnLoadCallback(initTable);
+
+    var forms = document.getElementsByClassName("needs-validation");
     //declare the settings for the popover and how it's controlled
     var popoverSettings = {
         html: true,
@@ -98,54 +106,113 @@
             return $("#popover-content-" + popoverId[1]).html();
         }
     }
-
-    google.load("visualization", "1", {
-        "packages": ["corechart"]
-    });
-
-    //add the csrf token to ajax calls so that laravel can stop crying
-    $.ajaxSetup({
-        headers: {
-            "X-CSRF-TOKEN": $("meta[name='csrf-token']").attr("content")
-        }
-    });
-    //sortable is a function implemented on jquery which gives the user the ability to move items on a list dynamically
-    /*
-    $("#streamer-stats").sortable();
-    $("#streamer-stats").disableSelection();
-    */
-    // Set a callback to run when the Google Visualization API is loaded.
-    //google.setOnLoadCallback(initTable);
-
-    var forms = document.getElementsByClassName("needs-validation");
+    var colorNames = {
+        red: 'rgb(255, 99, 132)',
+        orange: 'rgb(255, 159, 64)',
+        yellow: 'rgb(255, 205, 86)',
+        green: 'rgb(75, 192, 192)',
+        blue: 'rgb(54, 162, 235)',
+        purple: 'rgb(153, 102, 255)',
+        grey: 'rgb(201, 203, 207)'
+    };
     var channels = {};
     var channelsList = [];
     //delcare the regex expressions for validating user input on the forms
     var youtubeRe = /^(https:\/\/www.youtube.com\/)[\w\-\._~:/?#[\]@!\$&\(\)\*\+,;=.]+$/g;
     var twitchRe = /^[a-zA-Z0-9_]{4,25}$/;
     //the start and now variables help keep track of how long the tracking has been going on
-    var start, now, chartData, chart, update;
     //this setup variable is the boolean variable which helps decide when to show or hide html elements meant to give more information to user while tracking
     var setup = false;
     //max channels that the user can input, if it is reached the input fields are disabled
     var maxChannels = 7;
     //how many seconds must be waited until another ajax call to request updated information can be executed
     var cd = 60;
+    var colorKeys = Object.keys(colorNames);
     var intervalSet = false;
+    var chartRendered = false;
     var peakViewers = 0;
     var activeChannels = 0;
-    var peakViewersChannels;
-    var options = {
-        title: "Viewership",
-        vAxis: {
-            title: "Live Viewers"
+    var config = {
+        type: "line",
+        fill: false,
+        data: {
+            datasets: []
         },
-        hAxis: {
-            title: "Time",
-            textPosition: "none"
-        },
-        legend: "bottom"
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            title: {
+                display: true,
+                text: 'Live Viewership'
+            },
+            tooltips: {
+                mode: 'index',
+                intersect: false,
+            },
+            hover: {
+                mode: 'nearest',
+                intersect: true
+            },
+            scales: {
+                xAxes: [{
+                    display: true,
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Time'
+                    },
+                    ticks: {
+                        display: false
+                    }
+                }],
+                yAxes: [{
+                    display: true,
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Viewers'
+                    }
+                }]
+            },
+            animation: {
+                onComplete: function() {
+                    chartRendered = true
+                }
+            }
+        }
     };
+    var start, now, update, peakViewersChannels;
+
+    //enable tooltips
+    $(function(){
+        $("[data-toggle='tooltip']").tooltip();
+        var ctx = document.getElementById('viewership-chart').getContext('2d');
+        window.myLine = new Chart(ctx, config);
+    });
+    //add the csrf token to ajax calls so that laravel can stop crying
+    $.ajaxSetup({
+        headers: {
+            "X-CSRF-TOKEN": $("meta[name='csrf-token']").attr("content")
+        }
+    });
+    //*********
+    if(myStorage.getItem(window.location.href.split('/')[4]) !== null){
+        var pageData = JSON.parse(myStorage.getItem(window.location.href.split('/')[4]));
+        console.log(pageData);
+        if(pageData['twitch'] !== null && pageData['twitch'].trim().length > 0){
+            addStream(pageData['twitch']);
+        }
+        if(pageData['youtube'] !== null && pageData['youtube'].trim().length > 0){
+            addStream(pageData['youtube']);
+        }
+    }
+    else{
+        if('{!! $twitch !!}' !== null){
+            addStream('{!! $twitch !!}');
+        }
+        if('{!! $youtube !!}' !== null && '{!! $youtube !!}'.trim().length > 0){
+            addStream('{!! $youtube !!}');
+        }
+        myStorage.setItem('{!! $id !!}', JSON.stringify({'twitch': '{!! $twitch !!}', 'youtube': '{!! $youtube !!}'}));
+    }
 
 
     $("#add-tw-channel").on('click', function(event) {
@@ -225,12 +292,9 @@
         if (channelsList.length === 1 && activeChannels === 1) {
             $("#main-loader").toggleClass("hide");
             start = Math.floor(Date.now() / 60000);
-            initTable();
             setInterval(updateTime, 1000 * cd);
         }
-        else {
-            getData();
-        }
+        getData();
     }
     //updates the uptime of the tracking system and visualizes it for the user
     function updateTime() {
@@ -264,41 +328,30 @@
         }
     });
 
-    function initTable() {
-        chartData = new google.visualization.DataTable();
-        chartData.addColumn("string", "Time");
-        getData();
-    }
-
-    function drawChart() {
-        chart = new google.visualization.LineChart(document.getElementById("viewership-chart"));
-        chart.draw(chartData, options);
-    }
-
     $("#save-chart").on("click", function() {
-        //create a tag to act as a pseudo download link, where it points to chart's image uri
-        var downloadLink = document.createElement("a");
-        downloadLink.href = chart.getImageURI();
-        var dlTitle = "nutcracker_chart";
-        for(var i = 0; i < channelsList.length; i++){
-            if(channels[channelsList[i]]["channelInfo"] !== null){
-                dlTitle += "_"+channels[channelsList[i]]["channelInfo"]["channel"];
+        if (!chartRendered) return; // return if chart not rendered
+            html2canvas(document.getElementById("viewership-chart-container"), {
+            onrendered: function(canvas) {
+                var dlTitle = "nutcracker_chart";
+                for(var i = 0; i < channelsList.length; i++){
+                    if(channels[channelsList[i]]["channelInfo"] !== null){
+                        dlTitle += "_"+channels[channelsList[i]]["channelInfo"]["channel"];
+                    }
+                }
+                var link = document.createElement("a");
+                link.href = canvas.toDataURL("image/png", 1.0);
+                link.download = dlTitle + ".png";
+                $("#viewership-chart-container").css({"width": "100vw", "height": "100vh"});
+                window.myLine.update();
+                link.click();
+                $("#viewership-chart-container").css({"width": "100%", "height": "70vh"});
             }
-        }
-        downloadLink.download = dlTitle + ".png";
-        /// create a "fake" click-event to trigger the download
-        if (document.createEvent) {
-            e = document.createEvent("MouseEvents");
-            e.initMouseEvent("click", true, true, window,
-                0, 0, 0, 0, 0, false, false, false,
-                false, 0, null);
-            downloadLink.dispatchEvent(e);
-
-        }
-        else if (downloadLink.fireEvent) {
-            downloadLink.fireEvent("onclick");
-        }
+        })
     });
+
+    function initLoadData(data){
+
+    }
 
     function formatDate(date) {
         var hours = date.getHours();
@@ -312,8 +365,6 @@
     }
 
     function getData() {
-        //console.log("called");
-        console.log(chartData.getNumberOfColumns());
         var jsonData = $.ajax({
             url: "/getViewershipStats",
             data: {
@@ -328,7 +379,7 @@
                 var d = new Date(0); //get date from epoch
                 d.setUTCSeconds(res[0]);
                 channels = res[1];
-                var streamData = processStreamData([formatDate(d)]);
+                var streamData = processStreamData([]);
 
                 if (activeChannels === 0) {
                     endTracking();
@@ -338,7 +389,7 @@
                         startTracking();
                     }
                     console.log(streamData["dataToAdd"]);
-                    chartData.addRow(streamData["dataToAdd"]);
+                    addDataPoints(d, streamData["dataToAdd"]);
 
                     $("#total-viewers")[0].childNodes[0].nodeValue = streamData["viewershipSum"] + " ";
                     if (streamData['viewershipSum'] > peakViewers) {
@@ -352,14 +403,12 @@
                         intervalSet = true;
                         update = setInterval(getData, 1000 * cd);
                     }
-                    drawChart();
                 }
                 toggleLoading();
                 enableAddButtons();
             },
             error: function(XMLHttpRequest, textStatus, errorThrown) {
                 if (XMLHttpRequest.responseText.trim() == "Offline") {
-                    console.log(chartData.getNumberOfRows());
                     //clearInterval(update);                      
                 }
                 console.log(typeof(XMLHttpRequest.responseText) + " " + XMLHttpRequest.responseText + "\n");
@@ -399,6 +448,7 @@
                         $("#status-" + chanId).attr("title", "Offline");
                 }
                 output["dataToAdd"].push(currentViewers);
+                $("#stream-viewers-" + chanId).html(chanData["viewersHist"][1] + " <span class='viewers octicon octicon-person'></span>");
             }
             else{
                 //remove channel that is offline or does not exists form list from list and channels object
@@ -420,7 +470,6 @@
         var chanId = channelData["channelInfo"]["id"];
         var uptime = Math.floor((((new Date()).getTime() / 1000) - channelData["channelInfo"]["createdAt"]) / 60);
         $("#uptime-" + chanId).html(uptime + " minutes");
-        $("#stream-viewers-" + chanId).html(channelData["viewersHist"][1] + " <span class='viewers octicon octicon-person'></span>");
         $("#stream-avg-" + chanId).html(Math.floor(channelData["viewersHist"][0] / channelData["viewersHist"][3]));
         if(channelData["viewersHist"][2] > $("#stream-peak-" + chanId).text()){
             $("#stream-peak-" + chanId).html(channelData["viewersHist"][2]);
@@ -437,7 +486,7 @@
     function startTracking() {
         $("#chart-title").html("Tracking");
         $("#end-tracking").removeClass("hide");
-        $("#side-content").removeClass("hide");
+        $("#tracking-content").removeClass("invis");
         $("#save-chart").toggleClass("hide");
         setup = true;
         update = setInterval(getData, 1000 * cd);
@@ -449,6 +498,9 @@
         channelsList = [];
         setup = false;
         clearInterval(update);
+        $("#tracking-content").addClass("invis");
+        //empty chart data
+        //config.data.datasets = [];
         //$("#save-chart").addClass("hide");
         intervalSet = false;
         if (activeChannels === 0 && channelsList.length < 1) {
@@ -483,7 +535,6 @@
     }
     function clearSideContent() {
         $("#end-tracking").addClass("hide");
-        $("#side-content").addClass("hide");
         var myNode = document.getElementById("streamer-stats");
         var children = myNode.children;
         while (children.length > 3) {
@@ -534,7 +585,47 @@
                 "<span class='text-muted' id='platform-" + chanId + "'>" + data["channelInfo"]["platform"] + "</span></li>" +
             "</ul></div>";
         $("#streamer-stats").append(liHTML);
-        chartData.addColumn("number", data["channelInfo"]["channel"]);
+        //chartData.addColumn("number", data["channelInfo"]["channel"]);
+        addNewDataSet(data["channelInfo"]["channel"]);
+    }
+
+    function addNewDataSet(channelName){
+        var color = colorKeys[config.data.datasets.length % colorKeys.length];
+        console.log("num data sets: " + config.data.datasets.length + " num colors: " + colorKeys.length);
+        var newColor = colorNames[color];
+        var newDataset = {
+            label: channelName,
+            backgroundColor: newColor,
+            borderColor: newColor,
+            data: [],
+            fill: false,
+            pointRadius: 6,
+            numData: 0
+        };
+        config.data.datasets.push(newDataset);
+
+        for(var i = 0; i < config.data.datasets[0].data.length; i++){
+            newDataset.data.push(null);
+        }
+
+        window.myLine.update();        
+    }
+
+    function addDataPoints(label, dataRow){
+        if (config.data.datasets.length > 0) {
+            config.data.labels.push(label);
+            for(var i = 0; i < config.data.datasets.length; i++){
+                config.data.datasets[i].data.push(dataRow[i]);
+                config.data.datasets[i].numData++;
+                if(config.data.datasets[i].numData > 20){
+                    config.data.datasets[i].pointRadius = 0;
+                }
+                else if(config.data.datasets[i].numData > 10){
+                    config.data.datasets[i].pointRadius = 2;
+                }
+            }
+            window.myLine.update();
+        }
     }
 </script>
 @stop

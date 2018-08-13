@@ -14,13 +14,10 @@
                 <a class="nav-link" href="/trackViewership">Live Viewership Tracker</a>
             </li>
             <li class="nav-item {{ Request::segment(1) === 'topStreams' ? 'active' : null }}">
-                <a class="nav-link" href="/topStreams">Top Livestreams</a>
+                <a class="nav-link" href="/topStreams">Live Now</a>
             </li>
             <li class="nav-item {{ Request::segment(1) === 'about' ? 'active' : null }}">
                 <a class="nav-link" href="{{ url('/about') }}">About</a>
-            </li>
-            <li class="nav-item {{ Request::segment(1) === 'blog' ? 'active' : null }}">
-                <a class="nav-link" href="{{ url('/blog') }}">Blog</a>
             </li>
         </ul>
         <form class="form-inline mt-2 mt-md-0" action="{{ URL::route('channelSearch') }}" method="GET">

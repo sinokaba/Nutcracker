@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Log;
 
 class TwitchStream extends Livestream{
 	private $twitchClientId;
-	public $_API = array(
+	public $_API_V5 = array(
 		'streams' => 'https://api.twitch.tv/kraken/streams/',
 		'users' => 'https://api.twitch.tv/kraken/users?',
 		'channels' => 'https://api.twitch.tv/kraken/channels/',
@@ -14,22 +14,39 @@ class TwitchStream extends Livestream{
 		'search' => 'https://api.twitch.tv/kraken/search/',
 		'videos' => 'https://api.twitch.tv/kraken/videos'
     );
+    public $_API_NEW = array(
+    	'oauth' => 'https://id.twitch.tv/oauth2/authorize',
+    	'bits' => 'https://api.twitch.tv/helix/bits/leaderboard',
+    	'clips' => 'https://api.twitch.tv/helix/clips',
+    	'games' => 'https://api.twitch.tv/helix/games',
+    	'streams' => 'https://api.twitch.tv/helix/streams',
+    	'users' => 'https://api.twitch.tv/helix/users',
+    	'videos' => 'https://api.twitch.tv/helix/videos'
+    );
+
     private $videoIdPattern = '/^[v]?[0-9]+/';
     private $userIdPattern = '/^[0-9]+/';
 	private $urlBase = 'https://api.twitch.tv/kraken';
 	private $userExists;
 	private $header;
 	private $streamInfo;
+	private $channelId;
+	private $maxStreams = 100;
 	public $platform = 'Twitch';
 
-	function __construct($twitchChannel, $freq = null){
+	function __construct($twitchChannel, $userId = null, $freq = null){
 		parent::__construct($freq);
 		$this->setHeader();
-		$this->channelName = $twitchChannel;
-		if($this->channelName !== null){
+		if($twitchChannel !== null || $userId !== null){
+			if($twitchChannel !== null){
+				$this->channelName = $twitchChannel;
+			}
+			else{
+				$this->channelId = $userId;
+			}
 			$this->isOffline();
-			$this->getUserByName();
 		}
+
 	}
 
 	function setHeader(){
@@ -58,7 +75,7 @@ class TwitchStream extends Livestream{
 	function getUserByName($user = null){
 		$user = $user === null ? $this->channelName : $user;
 		$params = array('login' => $user);
-		$result = $this->getApiResponse($this->_API['users'], $params);
+		$result = $this->getApiResponse($this->_API_V5['users'], $params);
 		if($result['users'] === null || count($result['users']) == 0){
 			$this->userExists = false;
 			return null;
@@ -66,28 +83,43 @@ class TwitchStream extends Livestream{
 		return $result;
 	}
 
-	function getStreamDetails($channelId = null){
-		if($channelId == null){
+	function getStreamDetails($chanId = null){
+		$channelId = $chanId === null ? $this->channelId : $chanId; 
+		if($channelId === null){
 			$user = $this->getUserByName($this->channelName);
 			if($user === null){
 				return null;
 			}
 			$channelId = $user['users'][0]['_id'];
 		}
-		Log::error("twitch chan = " . $channelId);
-
-		$stream = $this->getApiResponse($this->_API['streams'] . $channelId);
-		return $stream['stream'];
+		$stream = $this->getApiResponse($this->_API_V5['streams'] . $channelId);
+		return $stream === null ? $stream : $stream['stream'];
 	}
 
 	function getTopLivestreams($limit = 25){
-		$params = array('limit' => $limit);
-		return $this->getApiResponse($this->_API['streams'] . '?', $params);
+		if($limit <= $this->maxStreams){
+			$params = array('first' => $limit);
+			return $this->getApiResponse($this->_API_NEW['streams'] . '?', $params)['data'];
+		}
+		$numLeft = $limit;
+		$pageId = null;
+		$fullData = array();
+		while($numLeft > 0){
+			$numLeft -= $this->maxStreams;
+			$params = array('first' => $this->maxStreams);
+			if($pageId !== null){
+				$params['after'] = $pageId;
+			}
+			$d = $this->getApiResponse($this->_API_NEW['streams'] . '?', $params);
+			$pageId = $d['pagination']['cursor'];
+			$fullData = array_merge($fullData, $d['data']);
+		}
+		return $fullData;
 	}
 
 	function getNumChatters(){
-		Log::error($this->channelName);
-		return $this->getUrlContents($this->_API['chat'] . $this->channelName . '/chatters');
+		//Log::error($this->channelName);
+		return $this->getUrlContents($this->_API_V5['chat'] . $this->channelName . '/chatters');
 	}
 
 	function getStreamTitle(){
@@ -141,6 +173,8 @@ class TwitchStream extends Livestream{
 			$this->offline = true;
 		}
 		else{
+			$this->channelName = $this->streamInfo['channel']['name'];
+			$this->channelId = $this->streamInfo['channel']['_id'];
 			$this->offline = false;
 		}
 		return $this->offline;				

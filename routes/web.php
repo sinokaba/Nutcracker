@@ -16,11 +16,13 @@ Route::get('/about', 'PagesController@about');
 Route::get('autocomplete', ['as' => 'autocomplete', 'uses' => 'PagesController@autocomplete']);
 Route::get('/blog', 'PostsController@blog');
 Route::get('channel/{name}', 'PagesController@getChannel');
+Route::get('/track/{id}', 'PagesController@trackStreams');
 
 Route::post('/getViewershipStats', 'ChannelsController@getStats');
-Route::get('/topStreams', 'ChannelsController@getTopstreams');
+Route::get('/topStreams', 'ChannelsController@topStreams');
 Route::get('/trackAll', 'ChannelsController@collectTopStreamersData');
-Route::get('channel', ['as' => 'channelSearch', 'uses' => 'ChannelsController@viewChannel']);
+Route::get('/channel', ['as' => 'channelSearch', 'uses' => 'ChannelsController@viewChannel']);
+Route::get('/addStream', 'ChannelsController@addStream');
 Route::get('/trackViewership', 'ChannelsController@index');
 
 Route::resource('esportsViewers', 'EsportsController');

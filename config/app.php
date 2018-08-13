@@ -17,8 +17,8 @@ return [
 
 
     #api keys for youtube and twitch used to gather stream channel data
-    'twitch_client_id' => 'ud3fxi21z72s0dq3e3u55yh4fnjuq0',
-    'twitch_secret' => 's22em0dfi04zrddq1pbotl8lytxeb2',
+    'twitch_client_id' => '5g5z7pwng12sxo9s51cleta8lq8pkb',
+    'twitch_secret' => 'er0ifcerrmo3w4d5moe8ccbpy88bzn',
 
     #youtube api key
     'youtube_api_key' => 'AIzaSyDLc4ppSH3_VauvHUjqHyJ9e0eTFsOLVDU',

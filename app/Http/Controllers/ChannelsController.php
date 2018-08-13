@@ -13,8 +13,24 @@ use App\Stream;
 class ChannelsController extends Controller
 {
     public function index(){
-        return view('livestreams.index');
+        return view('livestreams.addStream')->with('streams', $this->getTopStreams(3));
+        //return view('livestreams.trackStreams');
     }
+
+    public function addStream(Request $request){
+        $streams = array($request->input('twitch'), $request->input('youtube'));
+        $_id = uniqid();
+        if($streams[0] === ''){
+            $streams[0] = null;
+        }
+        if($streams[1] === ''){
+            $streams[1] = null;
+        }
+        $streams[2] = $_id;
+
+        return redirect()->to('/track/' . $_id)->with('streams', $streams);
+    }
+
     //returns current number of viewers as well as stats for the array of channels given
     public function getStats(Request $request){
         //get the data sent by the ajax call from the front end
@@ -41,14 +57,13 @@ class ChannelsController extends Controller
                     $platform = 'Youtube';
                 }
                 $viewers = $stream->getCurrentViewers();
-                Log::error('viewers = ' . $viewers);
                 if($viewers >= 0){
                     $channels[$channelsList[$i]]['viewersHist'][0] += $viewers; //total views
                     $channels[$channelsList[$i]]['viewersHist'][1] = $viewers; //current viewers
                     if($viewers > $channels[$channelsList[$i]]['viewersHist'][2]){
                         $channels[$channelsList[$i]]['viewersHist'][2] = $viewers; //peak viewership
                     }
-                    $channels[$channelsList[$i]]['viewersHist'][3] += 1; //num data count for viewership
+                    $channels[$channelsList[$i]]['viewersHist'][3]++; //num data count for viewership
                     //if first time adding stream, or 60 minutes has passed then get updated info of channel
                     if($channels[$channelsList[$i]]['numChecked'] % 60 == 0){
                         $channels[$channelsList[$i]]['channelInfo'] = $stream->getStreamInfo();
@@ -74,7 +89,7 @@ class ChannelsController extends Controller
                     }
                 }
             }
-            $channels[$channelsList[$i]]['numChecked'] += 1;
+            $channels[$channelsList[$i]]['numChecked']++;
         }
         array_push($res, $channels);
         //encode the multidimensional associated array to json with the numeric_check option to ensure that numbers don't get converted
@@ -122,6 +137,7 @@ class ChannelsController extends Controller
             
         }
     }
+
     //saves channel viewership data to the database
     public function storeViewership($numViewers, $channel, $platform){
         $v = new Viewership();
@@ -135,7 +151,8 @@ class ChannelsController extends Controller
         set_time_limit(0); #ensure that the php script doesn't timeout as it is executing
 
         //get hte top 50 streams from youtube and twitch
-        $numStreams = 50;
+
+        $numStreams = 100;
         $twitch = new twitchStream(null);
         $youtube = new youtubeStream(null);
         $topTwitch = $twitch->getTopLivestreams($numStreams);
@@ -145,23 +162,49 @@ class ChannelsController extends Controller
         $streamsToTrack = array();
         //this will hold the channel information of each youtube/twitch channel analyzed, since we can't get it if stream offline
         $streamChanInfo = array();
+        $addedChannels = array();
+
+        
+        //$allChannels = Channel::all();
+        //$channelsFile = 'channels.txt';
+        //$handleFile = fopen($channelsFile, 'a') or die('Cannot open file:  '.$channelsFile);
+        /*
+        foreach($allChannels as $channel){
+            //fwrite($handleFile, $channel->channel_name . ' ' . $channel->channel_id . PHP_EOL);
+            array_push($addedChannels, $channel->channel_name);
+            if($channel->platform == 0){ //twitch
+                $tw = new twitchStream($channel->channel_name);
+                if(!$tw->offline){
+                    array_push($streamsToTrack, $tw);
+                }   
+            }
+            else{
+                $yt = new youtubeStream($channel->channel_id);
+                if(!$yt->offline){
+                    array_push($streamsToTrack, $yt);
+                }
+            }
+        }
+        //fclose($handleFile);
+        */
         for($i = 0; $i < $numStreams; $i++){
             $yt = new youtubeStream(null, $topYoutube[$i]['id']['videoId']);
-            error_log('twitch adding ' . $topTwitch['streams'][$i]['channel']['name']);
-            $tw = new twitchStream($topTwitch['streams'][$i]['channel']['name']);
-            if(!$yt->offline){
-                array_push($streamsToTrack, $yt);
-            }
-            if(!$tw->offline){
-                array_push($streamsToTrack, $tw);
+            $tw = new twitchStream(null, $topTwitch[$i]['user_id']);
+            if(!in_array($yt->channelName, $addedChannels) && !in_array($tw->channelName, $addedChannels)){
+                if(!$yt->offline){
+                    array_push($streamsToTrack, $yt);
+                }
+                if(!$tw->offline){
+                    array_push($streamsToTrack, $tw);
+                }
             }
         }
         $done = array();
         while(count($streamsToTrack) > count($done)){
             for($i = 0; $i < count($streamsToTrack); $i++){
                 $chan = $streamsToTrack[$i];
-                error_log($chan->platform . ' ' . $chan->channelName);
                 if(!in_array($chan->channelName, $done)){
+                    error_log($chan->platform . ' ' . $chan->channelName);
                     $viewers = $chan->getCurrentViewers();
                     if($viewers >= 0){
                         $chan->totalViewership += $viewers;
@@ -196,21 +239,21 @@ class ChannelsController extends Controller
                     }
                 }
             }
-            error_log('pausing');
+            error_log('PAUSING. Channels left: ' . count($streamsToTrack) - count($done));
             sleep(60);
         }
     }
 
     //gets the top streams from youtube and twitch combined, and returns their channel data
-    public function getTopstreams(){
+    public function getTopStreams($numShow = 10){
         $twitch = new twitchStream(null);
         $youtube = new youtubeStream(null);
-        $topTwitch = $twitch->getTopLivestreams();
-        $topYoutube = $youtube->getTopLivestreams();
+        $topTwitch = $twitch->getTopLivestreams($numShow);
+        $topYoutube = $youtube->getTopLivestreams($numShow);
         //var_dump($twitch);
         $topStreams = array();
 
-        for($i = 0; $i < min(15, count($topYoutube)); $i++){
+        for($i = 0; $i < min($numShow, count($topYoutube)); $i++){
             $vid = $topYoutube[$i];
             $viewers = $youtube->getCurrentViewers($vid['id']['videoId']);
             $topStreams[$viewers] = array(
@@ -226,23 +269,27 @@ class ChannelsController extends Controller
                 'platform' => 'Youtube'
             );
         }
-        for($i = 0; $i < min(15, count($topTwitch['streams'])); $i++){
-            $stream = $topTwitch['streams'][$i];
-            $channelInfo = $stream['channel'];
-            $game = $channelInfo['game'] == 'PLAYERUNKNOWN\'S BATTLEGROUNDS' ? 'PUBG' : $channelInfo['game'];
-            $topStreams[$stream['viewers']] = array(
-                'title' => $channelInfo['status'],          
-                'channel' => $channelInfo['display_name'],
+        for($i = 0; $i < min($numShow, count($topTwitch)); $i++){
+            $stream = new TwitchStream(null, $topTwitch[$i]['user_id']);
+            $channelInfo = $stream->getStreamInfo();
+            $game = $channelInfo['cat'] == 'PLAYERUNKNOWN\'S BATTLEGROUNDS' ? 'PUBG' : $channelInfo['cat'];
+            $topStreams[$topTwitch[$i]['viewer_count']] = array(
+                'title' => $channelInfo['title'],          
+                'channel' => $channelInfo['channel'],
                 'cat' => $game,
-                'creation' => date('m-d-Y H:i:sa', strtotime($stream['created_at'])),
+                'creation' => $channelInfo['createdAt'],
                 'logo' => $channelInfo['logo'],
-                'viewers' => $stream['viewers'],
+                'viewers' => $topTwitch[$i]['viewer_count'],
                 'link' => $channelInfo['url'],
                 'platform' => 'Twitch',
-                'channelLink' => 'https://twitch.tv/'.$channelInfo['name'].'/videos'
+                'channelLink' => 'https://twitch.tv/'.$channelInfo['channel'].'/videos'
             );
         }
         krsort($topStreams);
-        return view('livestreams.topChannels')->with('data', $topStreams);
+        return $topStreams;
+    }
+
+    public function topStreams(){
+        return view('livestreams.topChannels')->with('data', $this->getTopStreams(100));
     }
 }
