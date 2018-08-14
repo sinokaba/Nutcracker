@@ -2,28 +2,50 @@
 
 @section('content')
 <div class="container">
-    <form class="needs-validation justify-content-center form-inline" id="tw-channel-form" onkeypress="return event.keyCode != 13;" novalidate>
-        <div class="form-group mb-2" style="width: 130px">
-            <h6 id="twitch-platform">Twitch Channel</h6>        
-        </div>
-        <div class="form-group mx-sm-4 mb-2">
-            <input type="text" class="form-control" style="width:21em" name="twitch-channel" maxlength="30" id="twitch-channel" placeholder="riotgames" required>
-        </div>
-        <button class="my-btn btn btn-outline-success mb-2" type="button" id="add-tw-channel">Add</button>
-        <div style="margin-left:1em">
-            <div id="mini-loader-tw" class="mini-loader invis"></div>
+    <form class="needs-validation" id="tw-channel-form" onkeypress="return event.keyCode != 13;" novalidate>
+        <div class="form-row justify-content-center">
+            <div class="col-auto my-1" style="width:9em">
+                <label>
+                    <h6>
+                        Twitch Channel
+                    </h6>
+                </label>
+            </div>
+            <div class="col-auto">
+                <input type="text" class="form-control mb-2" style="width:24em" name="twitch-channel" maxlength="25" id="twitch-channel" placeholder="riotgames" required style="width:21em" required>
+                <div class="invalid-feedback" id="twitch-input-feedback">
+                    Invalid Twitch channel
+                </div>
+            </div>
+            <div class="col-auto">
+                <button class="my-btn btn btn-outline-success mb-2" type="button" id="add-tw-channel" disabled>Add</button>
+            </div>
+            <div class="col-auto">
+                <div id="mini-loader-tw" class="mini-loader invis"></div>
+            </div>
         </div>
     </form>
-    <form class="needs-validation justify-content-center form-inline" id="yt-channel-form" novalidate>
-        <div class="form-group mb-2" style="width: 130px">
-            <h6 id="youtube-platform">Youtube URL</h6>
-        </div>
-        <div class="form-group mx-sm-4 mb-2">
-            <input type="text" class="form-control" style="width:21em"  name="youtube-channel" maxlength="60" id="youtube-channel" placeholder="https://www.youtube.com/CHANNEL" required>
-        </div>
-        <button class="my-btn btn btn-outline-success mb-2" type="button" id="add-yt-channel">Add</button>
-        <div style="margin-left:1em">
-            <div id="mini-loader-yt" class="mini-loader invis"></div>
+    <form class="needs-validation" id="yt-channel-form" onkeypress="return event.keyCode != 13;" novalidate>
+        <div class="form-row justify-content-center">
+            <div class="col-auto my-1" style="width:9em">
+                <label>
+                    <h6>
+                        Youtube URL
+                    </h6>
+                </label>
+            </div>
+            <div class="col-auto">
+                <input type="text" class="form-control mb-2" style="width:24em" name="youtube-channel" maxlength="60" id="youtube-channel" placeholder="https://www.youtube.com/CHANNEL" required>
+                <div class="invalid-feedback" id="twitch-input-feedback">
+                    Invalid Youtube URL
+                </div>
+            </div>
+            <div class="col-auto">
+                <button class="my-btn btn btn-outline-success mb-2" type="button" id="add-yt-channel" disabled>Add</button>
+            </div>
+            <div class="col-auto">
+                <div id="mini-loader-tw" class="mini-loader invis"></div>
+            </div>
         </div>
     </form>
 
@@ -94,7 +116,6 @@
     // Set a callback to run when the Google Visualization API is loaded.
     //google.setOnLoadCallback(initTable);
 
-    var forms = document.getElementsByClassName("needs-validation");
     //declare the settings for the popover and how it's controlled
     var popoverSettings = {
         html: true,
@@ -115,12 +136,12 @@
         purple: 'rgb(153, 102, 255)',
         grey: 'rgb(201, 203, 207)'
     };
-    var channels = {};
-    var channelsList = [];
+    var channels = {};  //keeps information of all channels added
+    var channelsList = []; //keeps track of name of all channels added
+    var activeChannels = 0;    
     //delcare the regex expressions for validating user input on the forms
     var youtubeRe = /^(https:\/\/www.youtube.com\/)[\w\-\._~:/?#[\]@!\$&\(\)\*\+,;=.]+$/g;
     var twitchRe = /^[a-zA-Z0-9_]{4,25}$/;
-    //the start and now variables help keep track of how long the tracking has been going on
     //this setup variable is the boolean variable which helps decide when to show or hide html elements meant to give more information to user while tracking
     var setup = false;
     //max channels that the user can input, if it is reached the input fields are disabled
@@ -131,7 +152,6 @@
     var intervalSet = false;
     var chartRendered = false;
     var peakViewers = 0;
-    var activeChannels = 0;
     var config = {
         type: "line",
         fill: false,
@@ -179,7 +199,9 @@
             }
         }
     };
-    var start, now, update, peakViewersChannels;
+    //the start variable help keep track of how long the tracking has been going on
+    //update variable calls the getData() funciton every interval of cd seconds
+    var start, update;
 
     //enable tooltips
     $(function(){
@@ -193,7 +215,10 @@
             "X-CSRF-TOKEN": $("meta[name='csrf-token']").attr("content")
         }
     });
+
     //*********
+
+    //not the first time it's being loaded
     if(myStorage.getItem(window.location.href.split('/')[4]) !== null){
         var pageData = JSON.parse(myStorage.getItem(window.location.href.split('/')[4]));
         console.log(pageData);
@@ -233,48 +258,74 @@
     function checkInput(formId, platformId, event) {
         disableAddButtons();
         console.log($(formId).serializeArray());
-        if ($(formId)[0].checkValidity() === false) {
-            event.preventDefault();
-            event.stopPropagation();
-            enableAddButtons();
-            toggleLoading();
+        if($(formId).serializeArray().length === 0){
+            invalidInput(platformId, 3, event);
         }
-        else if (channelsList.includes($(formId).serializeArray()[0]["value"])) {
-            event.preventDefault();
-            event.stopPropagation();
-            enableAddButtons();
-            toggleLoading();
-            alert("Channel already added");
-        }
-        else {
-            if (platformId == 0 && ($(formId).serializeArray()[0]["value"]).match(twitchRe) === null) {
-                event.preventDefault();
-                event.stopPropagation();
-                enableAddButtons();
-                toggleLoading();
-                alert("Invalid twitch Channel");
+        else{
+            if ($(formId)[0].checkValidity() === false) {
+                invalidInput(platformId, 0, event);
             }
-            else if (platformId == 1 && ($(formId).serializeArray()[0]["value"]).match(youtubeRe) === null) {
-                event.preventDefault();
-                event.stopPropagation();
-                enableAddButtons();
-                toggleLoading();
-                alert("Invalid Youtube URL");
+            //channel already added
+            else if (channelsList.includes($(formId).serializeArray()[0]["value"])) {
+                invalidInput(platformId, 1, event);
             }
             else {
-                if (channelsList.length >= maxChannels) {
-                    $(formId).prop("disabled", true);
-                    enableAddButtons();
-                    toggleLoading();
-                    alert("Max number of channels to track reached.");
+                //0 is twitch input field, does not match twitch channel pattern
+                if (platformId == 0 && ($(formId).serializeArray()[0]["value"]).match(twitchRe) === null) {
+                    invalidInput(platformId, 2, event);
+                }
+                //1 is youtube input field, does not match youtube url pattern
+                else if (platformId == 1 && ($(formId).serializeArray()[0]["value"]).match(youtubeRe) === null) {
+                    invalidInput(platformId, 2, event);
                 }
                 else {
-                    var userInput = $(formId).serializeArray()[0]["value"];
-                    addStream(userInput);
-                    $(formId)[0].classList.add("was-validated");
-                    $(formId).val("");
+                    if (channelsList.length >= maxChannels) {
+                        invalidInput(null, 3, event);
+                    }
+                    else {
+                        var userInput = $(formId).serializeArray()[0]["value"];
+                        addStream(userInput);
+                        $(formId)[0].classList.add("was-validated");
+                        if(platformId == 0){
+                            $("#twitch-channel").removeClass("is-invalid").addClass("is-valid");
+                        }
+                        else{
+                            $("#youtube-channel").removeClass("is-invalid").addClass("is-valid");
+                        }
+                        $(formId).val("");
+                    }
                 }
             }
+        }
+    }
+
+    function invalidInput(field, type, event){
+        event.preventDefault();
+        event.stopPropagation();
+        enableAddButtons();
+        toggleLoading();
+        if(field === 0){
+            $("#twitch-channel").removeClass("is-valid").addClass("is-invalid");
+            if(type === 1){  
+                $("#twitch-input-feedback").html("Channel already added.");
+            }   
+            else{
+                $("#twitch-input-feedback").html("Invalid Twitch Channel");
+            }
+        }
+        else if(field === 1){
+            $("#youtube-channel").removeClass("is-valid").addClass("is-invalid");
+            if(type === 1){
+                $("#youtube-input-feedback").html("Channel already added");
+            }
+            else{
+                $("#youtube-input-feedback").html("Invalid Youtube URL");
+            }
+        }
+        else{
+            $("#twitch-channel").val("").prop("disabled", true);
+            $("#youtube-channel").val("").prop("disabled", true);
+            alert("Max channels added reached.");
         }
     }
 
@@ -283,12 +334,12 @@
             "status": 1, //1 = online, 0 = offline
             'numChecked': 0, //number of items this channel was checked
             "channelInfo": null, //derived from api calls
-            "viewersHist": [0, 0, 0, 0], //total viewers, current viewers, peak viewers, data count
+            "viewersStats": [0, 0, 0, 0], //total viewers, current viewers, peak viewers, data count
             "addedToDB": 0 //0 = not added, 1 = channel added, 2 = stream added
         };
         channelsList.push(userInput);
-        activeChannels++;
         //console.log(channels);
+        activeChannels++;
         if (channelsList.length === 1 && activeChannels === 1) {
             $("#main-loader").toggleClass("hide");
             start = Math.floor(Date.now() / 60000);
@@ -296,6 +347,18 @@
         }
         getData();
     }
+
+    function addOldData(){
+        channelsList = Object.keys(data);
+        addNewDataSet(channels);
+        if (channelsList.length === 1 && activeChannels === 1) {
+            $("#main-loader").toggleClass("hide");
+            start = Math.floor(Date.now() / 60000);
+            setInterval(updateTime, 1000 * cd);
+        }    
+        getData();   
+    }
+
     //updates the uptime of the tracking system and visualizes it for the user
     function updateTime() {
         var minsElapsed = (Math.floor(Date.now() / 60000) - start);
@@ -349,10 +412,6 @@
         })
     });
 
-    function initLoadData(data){
-
-    }
-
     function formatDate(date) {
         var hours = date.getHours();
         var minutes = date.getMinutes();
@@ -370,64 +429,65 @@
             data: {
                 channels: channels,
                 chanList: channelsList,
+                labels: config.data.labels,
+                _id: window.location.href.split('/')[4]
             },
             method: "POST",
             dataType: "JSON",
             success: function(res) {
                 console.log(typeof(res));
                 console.log(res);
+                channels = res[1];
                 var d = new Date(0); //get date from epoch
                 d.setUTCSeconds(res[0]);
-                channels = res[1];
-                var streamData = processStreamData([]);
+                var streamData = processStreamData();
 
                 if (activeChannels === 0) {
                     endTracking();
                 }
                 else{
-                    if (!setup) {
-                        startTracking();
-                    }
-                    console.log(streamData["dataToAdd"]);
-                    addDataPoints(d, streamData["dataToAdd"]);
-
-                    $("#total-viewers")[0].childNodes[0].nodeValue = streamData["viewershipSum"] + " ";
-                    if (streamData['viewershipSum'] > peakViewers) {
-                        $("#peak-viewers")[0].childNodes[0].nodeValue = streamData["viewershipSum"] + " ";
-                        peakViewersChannels = streamData["contributingChannels"];
-                        peakViewers = streamData['viewershipSum'];
-                        $("#popover-0").popover(popoverSettings);
-                        $("#popover-0-content").html(streamData['peakViewersHTML']);
-                    }
-                    if (!intervalSet) {
-                        intervalSet = true;
-                        update = setInterval(getData, 1000 * cd);
-                    }
+                    updateStats(streamData, d);
                 }
                 toggleLoading();
                 enableAddButtons();
             },
             error: function(XMLHttpRequest, textStatus, errorThrown) {
-                if (XMLHttpRequest.responseText.trim() == "Offline") {
-                    //clearInterval(update);                      
-                }
                 console.log(typeof(XMLHttpRequest.responseText) + " " + XMLHttpRequest.responseText + "\n");
                 console.log("Error: " + errorThrown);
             }
         });
     }
 
-    function processStreamData(chartRows) {
+    function updateStats(streamData, date){
+        if (!setup) {
+            startTracking();
+        }
+        console.log(streamData["dataToAdd"]);
+        addDataPoints(date, streamData["dataToAdd"]);
+
+        $("#total-viewers")[0].childNodes[0].nodeValue = streamData["viewershipSum"] + " ";
+        if (streamData['viewershipSum'] > peakViewers) {
+            $("#peak-viewers")[0].childNodes[0].nodeValue = streamData["viewershipSum"] + " ";
+            peakViewers = streamData['viewershipSum'];
+            $("#popover-0").popover(popoverSettings);
+            $("#popover-0-content").html(streamData['peakViewersHTML']);
+        }
+        if (!intervalSet) {
+            intervalSet = true;
+            update = setInterval(getData, 1000 * cd);
+        }
+    }
+
+    function processStreamData() {
         var output = {};
         output["viewershipSum"] = 0;
         output["peakViewersHTML"] = "<ul class='list-group' id='popover-content-0'>";
-        output["dataToAdd"] = chartRows;
-        output["contributingChannels"] = [];
+        output["dataToAdd"] = [];
         temp = channelsList;
         console.log("channels list: " + channelsList);
         for (var i = 0; i < channelsList.length; i++) {
             var chanData = channels[channelsList[i]]; //current channel in the iteration
-            var currentViewers = chanData["viewersHist"][1];            
+            var currentViewers = chanData["viewersStats"][1];            
             if (chanData["channelInfo"] !== null) {
                 var chanId = chanData["channelInfo"]["id"];
                 if (chanData["status"] == 1) {
@@ -435,8 +495,6 @@
                     if (chanData["numChecked"] == 1 && currentViewers >= 0) {
                         addStreamInfo(chanData);
                     }
-
-                    output["contributingChannels"].push(chanData["channelInfo"]["channel"]);
                     output["viewershipSum"] += currentViewers;
                     //create the list elements for channels which contributed to peak viewership
                     output["peakViewersHTML"] += "<li>" + chanData["channelInfo"]["channel"] + " - " + currentViewers + "</li>";
@@ -448,7 +506,7 @@
                         $("#status-" + chanId).attr("title", "Offline");
                 }
                 output["dataToAdd"].push(currentViewers);
-                $("#stream-viewers-" + chanId).html(chanData["viewersHist"][1] + " <span class='viewers octicon octicon-person'></span>");
+                $("#stream-viewers-" + chanId).html(chanData["viewersStats"][1] + " <span class='viewers octicon octicon-person'></span>");
             }
             else{
                 //remove channel that is offline or does not exists form list from list and channels object
@@ -470,9 +528,9 @@
         var chanId = channelData["channelInfo"]["id"];
         var uptime = Math.floor((((new Date()).getTime() / 1000) - channelData["channelInfo"]["createdAt"]) / 60);
         $("#uptime-" + chanId).html(uptime + " minutes");
-        $("#stream-avg-" + chanId).html(Math.floor(channelData["viewersHist"][0] / channelData["viewersHist"][3]));
-        if(channelData["viewersHist"][2] > $("#stream-peak-" + chanId).text()){
-            $("#stream-peak-" + chanId).html(channelData["viewersHist"][2]);
+        $("#stream-avg-" + chanId).html(Math.floor(channelData["viewersStats"][0] / channelData["viewersStats"][3]));
+        if(channelData["viewersStats"][2] > $("#stream-peak-" + chanId).text()){
+            $("#stream-peak-" + chanId).html(channelData["viewersStats"][2]);
         }
         if(channelData["numChecked"] % 60 == 0){
             $("#total-views-" + chanId).html(channelData["channelInfo"]["totalViews"]);
@@ -586,15 +644,15 @@
             "</ul></div>";
         $("#streamer-stats").append(liHTML);
         //chartData.addColumn("number", data["channelInfo"]["channel"]);
-        addNewDataSet(data["channelInfo"]["channel"]);
+        addNewDataSet(data["channelInfo"]["channel"], data);
     }
 
-    function addNewDataSet(channelName){
+    function addNewDataSet(channel, channelInfo){
         var color = colorKeys[config.data.datasets.length % colorKeys.length];
         console.log("num data sets: " + config.data.datasets.length + " num colors: " + colorKeys.length);
         var newColor = colorNames[color];
         var newDataset = {
-            label: channelName,
+            label: channel,
             backgroundColor: newColor,
             borderColor: newColor,
             data: [],
@@ -606,9 +664,30 @@
 
         for(var i = 0; i < config.data.datasets[0].data.length; i++){
             newDataset.data.push(null);
+            channelInfo["viewersHist"].unshift(null);
         }
-
         window.myLine.update();        
+    }
+
+    function addCompleteDataSet(completeData){
+        for(var i = 0; i < channelsList.length; i++){
+            if(channels[channelsList[i]]["channelInfo"] !== null){
+                var color = colorKeys[config.data.datasets.length % colorKeys.length];
+                var newColor = colorNames[color];
+                var newDataset = {
+                    label: completeData["channelInfo"]["channel"],
+                    backgroundColor: newColor,
+                    borderColor: newColor,
+                    data: completeData["viewersHist"],
+                    fill: false,
+                    pointRadius: completeData["viewersHist"].length < 10 ? 6 : 2,
+                    numData: 0
+                };
+                config.data.datasets.push(newDataset);
+                activeChannels++;
+            }
+        }
+        window.myLine.update();   
     }
 
     function addDataPoints(label, dataRow){

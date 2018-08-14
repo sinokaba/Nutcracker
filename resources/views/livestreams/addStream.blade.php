@@ -15,7 +15,7 @@
     <div class="row">
         <div class="col-md-8">
             <div id="form-container">
-                <form class="form-add-channel" action="/addStream" method="GET">
+                <form class="form-add-channel" action="/addStream" type="GET" onsubmit="return validateForm()">
                     <div class="justify-content-center mb-3" style="text-align: center; display: inline-block; width: 100%">
                         <h1 class="h3 font-weight-normal">
                             <span style="font-size: 2.5em" class="octicon octicon-telescope"></span>
@@ -23,13 +23,19 @@
                     </div>
                     <input type="hidden" name="_token" value="{{ csrf_token() }}">
                     <h6 id="twitch-platform">Twitch Channel</h6>       
-                    <div class="form-group"> 
-                        <input type="twitch" id="inputTwitch" class="form-control" name="twitch" maxlength="30" placeholder="riotgames" autofocus>
+                    <div class="form-group" id="twitch-input-container"> 
+                        <input type="twitch" id="inputTwitch" class="form-control" maxlength="25" name="twitch" maxlength="30" placeholder="riotgames" autofocus>
+                        <div class="invalid-feedback">
+                            Invalid Twitch channel
+                        </div>
                     </div>
 
                     <h6 id="youtube-platform">Youtube URL</h6>
-                    <div class="form-group">                           
-                        <input type="youtube" id="inputYoutube" class="form-control"  name="youtube" maxlength="60" placeholder="https://www.youtube.com/CHANNEL">
+                    <div class="form-group" id="youtube-input-container">                           
+                        <input type="youtube" id="inputYoutube" class="form-control" maxlength="60" name="youtube" maxlength="60" placeholder="https://www.youtube.com/CHANNEL">
+                         <div class="invalid-feedback">
+                            Invalid Youtube channel or video URL
+                        </div>                   
                     </div>
 
                     <hr class="featurette-divider">            
@@ -85,4 +91,35 @@
         </div>
     </div>
 </div>
+@stop
+
+@section('addScript')
+<script type="text/javascript">
+    //delcare the regex expressions for validating user input on the forms
+    var youtubeRe = /^(https:\/\/www.youtube.com\/)[\w\-\._~:/?#[\]@!\$&\(\)\*\+,;=.]+$/g;
+    var twitchRe = /^[a-zA-Z0-9_]{4,25}$/;
+
+    function validateForm(){
+        if(!$("#inputTwitch").val().match(twitchRe) && !$("#inputYoutube").val().match(youtubeRe)){
+            $("#inputTwitch").addClass("is-invalid");
+            $("#inputYoutube").addClass("is-invalid");
+            return false;
+        }
+        else if($("#inputYoutube").val().match(youtubeRe) && $("#inputTwitch").val().length > 0){
+            if($("#inputYoutube").hasClass("is-invalid")){
+                $("#inputYoutube").removeClass("is-invalid").addClass("is-valid");
+            }
+            $("#inputTwitch").addClass("is-invalid");
+            return false;
+        }
+        else if($("#inputTwitch").val().match(twitchRe) && $("#inputYoutube").val().length > 0){
+            if($("#inputTwitch").hasClass("is-invalid")){
+                $("#inputTwitch").removeClass("is-invalid").addClass("is-valid");
+            }
+            $("#inputYoutube").addClass("is-invalid");
+            return false;
+        }
+        return true;
+    }
+</script>
 @stop

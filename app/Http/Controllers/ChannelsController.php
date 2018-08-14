@@ -18,17 +18,14 @@ class ChannelsController extends Controller
     }
 
     public function addStream(Request $request){
-        $streams = array($request->input('twitch'), $request->input('youtube'));
+        $streams = array(
+            'twitch' => $request->input('twitch'), 
+            'youtube' => $request->input('youtube')
+        );
         $_id = uniqid();
-        if($streams[0] === ''){
-            $streams[0] = null;
-        }
-        if($streams[1] === ''){
-            $streams[1] = null;
-        }
-        $streams[2] = $_id;
-
-        return redirect()->to('/track/' . $_id)->with('streams', $streams);
+        $streams['id'] = $_id;
+        session(['streams_' . $_id => $streams]);
+        return redirect()->to('/track/' . $_id);
     }
 
     //returns current number of viewers as well as stats for the array of channels given
@@ -41,6 +38,9 @@ class ChannelsController extends Controller
         for($i = 0; $i < count($channelsList); $i++){
             //all youtube urls will have youtube.com, else the url given is twitch
             //this is further checked by the regex expression on the front end, that checks for valid twitch and youtube urls
+            if(!array_key_exists('viewersHist', $channels[$channelsList[$i]])){
+                $channels[$channelsList[$i]]['viewersHist'] = array();
+            }            
             if($channels[$channelsList[$i]]["status"] == 1 || $channels[$channelsList[$i]]['numChecked'] % 60 == 0){
                 if(stripos($channelsList[$i], 'www.youtube.com/') == null){
                     $stream = new twitchStream($channelsList[$i]);
@@ -58,12 +58,12 @@ class ChannelsController extends Controller
                 }
                 $viewers = $stream->getCurrentViewers();
                 if($viewers >= 0){
-                    $channels[$channelsList[$i]]['viewersHist'][0] += $viewers; //total views
-                    $channels[$channelsList[$i]]['viewersHist'][1] = $viewers; //current viewers
-                    if($viewers > $channels[$channelsList[$i]]['viewersHist'][2]){
-                        $channels[$channelsList[$i]]['viewersHist'][2] = $viewers; //peak viewership
+                    $channels[$channelsList[$i]]['viewersStats'][0] += $viewers; //total views
+                    $channels[$channelsList[$i]]['viewersStats'][1] = $viewers; //current viewers
+                    if($viewers > $channels[$channelsList[$i]]['viewersStats'][2]){
+                        $channels[$channelsList[$i]]['viewersStats'][2] = $viewers; //peak viewership
                     }
-                    $channels[$channelsList[$i]]['viewersHist'][3]++; //num data count for viewership
+                    $channels[$channelsList[$i]]['viewersStats'][3]++; //num data count for viewership
                     //if first time adding stream, or 60 minutes has passed then get updated info of channel
                     if($channels[$channelsList[$i]]['numChecked'] % 60 == 0){
                         $channels[$channelsList[$i]]['channelInfo'] = $stream->getStreamInfo();
@@ -77,17 +77,18 @@ class ChannelsController extends Controller
 
                 }
                 else{
-                    $channels[$channelsList[$i]]['viewersHist'][1] = 0;
+                    $channels[$channelsList[$i]]['viewersStats'][1] = 0;
                     $channels[$channelsList[$i]]['status'] = 0;
                     //add the average viewership data for the channel if the channel goes offline and its viewership has been tracked
                     if($channels[$channelsList[$i]]['channelInfo'] !== null && $channels[$channelsList[$i]]['addedToDB'] == 1){
-                        if($channels[$channelsList[$i]]['viewersHist'][2] > 0){
-                            $avgViewership = floor($channels[$channelsList[$i]]['viewersHist'][0]/$channels[$channelsList[$i]]['viewersHist'][3]);
-                            $this->storeStreamViewership($channels[$channelsList[$i]]['channelInfo'], $avgViewership, $channels[$channelsList[$i]]['viewersHist'][2]);
+                        if($channels[$channelsList[$i]]['viewersStats'][2] > 0){
+                            $avgViewership = floor($channels[$channelsList[$i]]['viewersStats'][0]/$channels[$channelsList[$i]]['viewersStats'][3]);
+                            $this->storeStreamViewership($channels[$channelsList[$i]]['channelInfo'], $avgViewership, $channels[$channelsList[$i]]['viewersStats'][2]);
                             $channels[$channelsList[$i]]['addedToDB'] = 2;
                         }
                     }
                 }
+                array_push($channels[$channelsList[$i]]['viewersHist'], $channels[$channelsList[$i]]['viewersStats'][1]);
             }
             $channels[$channelsList[$i]]['numChecked']++;
         }

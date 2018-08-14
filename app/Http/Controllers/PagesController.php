@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use Session;
-use Illuminate\Http\Request;
 use App\Livestream;
 use App\Channel;
 use App\twitchStream;
 use App\youtubeStream;
 use App\Stream;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
+use Request;
 
 //returns specified route
 class PagesController extends Controller
@@ -36,15 +37,12 @@ class PagesController extends Controller
     	return view('pages.about');
     }
 
-    public function trackStreams(){
-        $streams = Session::get('streams');
+    public function trackStreams(Request $request){
+        $path = Request::getPathInfo();
+        Log::error(explode('/', $path)[2]);
+        $streams = session()->get('streams_' . explode('/', $path)[2]);
         if($streams !== null){
-            $data = array(
-                'twitch' => $streams[0],
-                'youtube' => $streams[1],
-                'id' => $streams[2]
-            );
-            return view('livestreams.trackStreams')->with($data);
+            return view('livestreams.trackStreams')->with($streams);
         }
         return abort(404);
     }
