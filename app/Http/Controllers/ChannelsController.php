@@ -9,6 +9,7 @@ use App\YoutubeStream;
 use App\Viewership;
 use App\Channel;
 use App\Stream;
+use Session;
 
 class ChannelsController extends Controller
 {
@@ -25,6 +26,7 @@ class ChannelsController extends Controller
         $_id = uniqid();
         $streams['id'] = $_id;
         session(['streams_' . $_id => $streams]);
+        session::save();
         return redirect()->to('/track/' . $_id);
     }
 
@@ -37,11 +39,8 @@ class ChannelsController extends Controller
         //loop through each channel detecting if its youtube or twitch and gather data respectively
         for($i = 0; $i < count($channelsList); $i++){
             //all youtube urls will have youtube.com, else the url given is twitch
-            //this is further checked by the regex expression on the front end, that checks for valid twitch and youtube urls
-            if(!array_key_exists('viewersHist', $channels[$channelsList[$i]])){
-                $channels[$channelsList[$i]]['viewersHist'] = array();
-            }            
-            if($channels[$channelsList[$i]]["status"] == 1 || $channels[$channelsList[$i]]['numChecked'] % 60 == 0){
+            //this is further checked by the regex expression on the front end, that checks for valid twitch and youtube urls      
+            if($channels[$channelsList[$i]]["status"] == 1 || $channels[$channelsList[$i]]['numChecked'] % 5 == 0){
                 if(stripos($channelsList[$i], 'www.youtube.com/') == null){
                     $stream = new twitchStream($channelsList[$i]);
                     $platform = 'Twitch';
@@ -60,6 +59,7 @@ class ChannelsController extends Controller
                 if($viewers >= 0){
                     $channels[$channelsList[$i]]['viewersStats'][0] += $viewers; //total views
                     $channels[$channelsList[$i]]['viewersStats'][1] = $viewers; //current viewers
+                    $channels[$channelsList[$i]]["status"] = 1;
                     if($viewers > $channels[$channelsList[$i]]['viewersStats'][2]){
                         $channels[$channelsList[$i]]['viewersStats'][2] = $viewers; //peak viewership
                     }
@@ -88,7 +88,6 @@ class ChannelsController extends Controller
                         }
                     }
                 }
-                array_push($channels[$channelsList[$i]]['viewersHist'], $channels[$channelsList[$i]]['viewersStats'][1]);
             }
             $channels[$channelsList[$i]]['numChecked']++;
         }
@@ -240,7 +239,7 @@ class ChannelsController extends Controller
                     }
                 }
             }
-            error_log('PAUSING. Channels left: ' . count($streamsToTrack) - count($done));
+            error_log('PAUSING. Channels left: ' . (count($streamsToTrack) - count($done)));
             sleep(60);
         }
     }
@@ -291,6 +290,6 @@ class ChannelsController extends Controller
     }
 
     public function topStreams(){
-        return view('livestreams.topChannels')->with('data', $this->getTopStreams(100));
+        return view('livestreams.topChannels')->with('data', $this->getTopStreams(50));
     }
 }

@@ -10,6 +10,8 @@ use App\youtubeStream;
 use App\Stream;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Response;
 use Request;
 
 //returns specified route
@@ -39,7 +41,7 @@ class PagesController extends Controller
 
     public function trackStreams(Request $request){
         $path = Request::getPathInfo();
-        Log::error(explode('/', $path)[2]);
+        //Log::error(explode('/', $path)[2]);
         $streams = session()->get('streams_' . explode('/', $path)[2]);
         if($streams !== null){
             return view('livestreams.trackStreams')->with($streams);
@@ -51,7 +53,6 @@ class PagesController extends Controller
         Log::error($channelName);
         $channel = Channel::where('channel_name', $channelName)->first();
         $streams = Stream::where('channel_id', $channel->channel_id)->get();
-        Log::info('num streams: ' . count($streams));
         if($channel !== null){
             if($channel->platform == 0){
                 $channel['url'] = 'https://www.twitch.tv/' . $channel->channel_name;
@@ -71,13 +72,16 @@ class PagesController extends Controller
         echo 'not found';
     }
 
-    public function autocomplete(Request $request){
-        $term = $request->term;
+    public function autocomplete(){
+        $term = Input::get('term');
+        Log::error($term);
+        $results = array();
         $data = Channel::where('channel_name','LIKE','%'.$term.'%')->take(5)->get();
+        
         $result = array();
         foreach ($data as $key => $v){
             array_push($result, $v->channel_name);
         }
-        return json_encode($result);        
+        return json_encode($result); 
     }
 }

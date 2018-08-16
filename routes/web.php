@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Log;
 */
 Route::get('/', 'PagesController@index');
 Route::get('/about', 'PagesController@about');
-Route::get('autocomplete', ['as' => 'autocomplete', 'uses' => 'PagesController@autocomplete']);
+Route::get('/autocomplete', 'PagesController@autocomplete');
 Route::get('/blog', 'PostsController@blog');
 Route::get('channel/{name}', 'PagesController@getChannel');
 Route::get('/track/{id}', 'PagesController@trackStreams');

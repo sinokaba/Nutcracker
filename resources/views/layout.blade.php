@@ -32,11 +32,29 @@
             @include('components.navbar')
             @yield('content')
 
-            <div class="line"></div>
             <!-- FOOTER -->
-            <footer class="container" style=>
-                <p class="float-right"><a href="#">Back to top</a></p>
-                <p>&copy; Nutcracker &middot; <a href="#">Privacy</a> &middot; <a href="#">Terms</a></p>
+            <footer class="footer-bs">
+                <div class="row">
+                    <div class="col-md-3 footer-brand animated fadeInLeft text-center">
+                        <h2>Nutcracker</h2>
+                        <p>© 2018 SNKB, All rights reserved</p>
+                    </div>
+                    <div class="col-md-7 footer-nav animated fadeInUp">
+                        <div class="row justify-content-center">
+                            <ul class="pages list-inline">
+                                <li class="list-inline-item"><a href="#">About Us</a></li>
+                                <li class="list-inline-item"><a href="#">Contacts</a></li>
+                                <li class="list-inline-item"><a href="#">Terms & Condition</a></li>
+                                <li class="list-inline-item"><a href="#">Privacy Policy</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-2 footer-nav animated fadeInDown">
+                        <div class="text-center">
+                            <img src="{{ asset('imgs/logo.png') }}" alt="nutcracker_logo.png" style="width: 5em">
+                        </div>
+                    </div>
+                </div>
             </footer>
         </main>
 
@@ -44,8 +62,8 @@
         <script type="text/javascript">
             $(function(){
                 $("#search-channel").autocomplete({
-                    source: '{!!URL::route('autocomplete')!!}',
-                    minlength: 1,
+                    source: '/autocomplete',
+                    minlength: 2,
                     autoFocus: true
                 });
             })

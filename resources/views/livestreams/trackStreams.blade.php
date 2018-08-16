@@ -12,7 +12,7 @@
                 </label>
             </div>
             <div class="col-auto">
-                <input type="text" class="form-control mb-2" style="width:24em" name="twitch-channel" maxlength="25" id="twitch-channel" placeholder="riotgames" required style="width:21em" required>
+                <input type="text" class="form-control mb-2" style="width:24em" name="twitch-channel" maxlength="25" id="twitch-channel" placeholder="riotgames" style="width:21em" required>
                 <div class="invalid-feedback" id="twitch-input-feedback">
                     Invalid Twitch channel
                 </div>
@@ -44,7 +44,7 @@
                 <button class="my-btn btn btn-outline-success mb-2" type="button" id="add-yt-channel" disabled>Add</button>
             </div>
             <div class="col-auto">
-                <div id="mini-loader-tw" class="mini-loader invis"></div>
+                <div id="mini-loader-yt" class="mini-loader invis"></div>
             </div>
         </div>
     </form>
@@ -67,7 +67,7 @@
                 <span class="octicon octicon-graph"></span>
             </h3>
             <div class="media text-muted pt-3 custom-flex justify-content-between">
-                <h5 class="my-0">Total Viewers</h5>
+                <h5 class="my-0">Total Live Viewers</h5>
                 <strong id="total-viewers">
                     <span class="viewers octicon octicon-organization"></span>
                 </strong> 
@@ -101,6 +101,9 @@
         </div>
     </div>
 </div>
+
+<hr class="featurette-divider">
+
 @stop
 @section('addScript')
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.min.js"></script>
@@ -138,6 +141,7 @@
     };
     var channels = {};  //keeps information of all channels added
     var channelsList = []; //keeps track of name of all channels added
+    var viewershipHistory = {};
     var activeChannels = 0;    
     //delcare the regex expressions for validating user input on the forms
     var youtubeRe = /^(https:\/\/www.youtube.com\/)[\w\-\._~:/?#[\]@!\$&\(\)\*\+,;=.]+$/g;
@@ -147,7 +151,7 @@
     //max channels that the user can input, if it is reached the input fields are disabled
     var maxChannels = 7;
     //how many seconds must be waited until another ajax call to request updated information can be executed
-    var cd = 60;
+    var cd = 120;
     var colorKeys = Object.keys(colorNames);
     var intervalSet = false;
     var chartRendered = false;
@@ -223,18 +227,18 @@
         var pageData = JSON.parse(myStorage.getItem(window.location.href.split('/')[4]));
         console.log(pageData);
         if(pageData['twitch'] !== null && pageData['twitch'].trim().length > 0){
-            addStream(pageData['twitch']);
+            addStream(pageData['twitch'], 0);
         }
         if(pageData['youtube'] !== null && pageData['youtube'].trim().length > 0){
-            addStream(pageData['youtube']);
+            addStream(pageData['youtube'], 1);
         }
     }
     else{
         if('{!! $twitch !!}' !== null){
-            addStream('{!! $twitch !!}');
+            addStream('{!! $twitch !!}', 0);
         }
         if('{!! $youtube !!}' !== null && '{!! $youtube !!}'.trim().length > 0){
-            addStream('{!! $youtube !!}');
+            addStream('{!! $youtube !!}', 1);
         }
         myStorage.setItem('{!! $id !!}', JSON.stringify({'twitch': '{!! $twitch !!}', 'youtube': '{!! $youtube !!}'}));
     }
@@ -244,47 +248,47 @@
         if (channelsList.length > 0) {
             $("#mini-loader-tw").toggleClass("invis");
         }
-        checkInput("#twitch-channel", 0, event);
+        checkInput("#twitch-channel", 0);
     });
 
     $("#add-yt-channel").on('click', function(event) {
         if (channelsList.length > 0) {
             $("#mini-loader-yt").toggleClass("invis");
         }
-        checkInput("#youtube-channel", 1, event);
+        checkInput("#youtube-channel", 1);
     });
 
     // Loop over them and prevent submission
-    function checkInput(formId, platformId, event) {
+    function checkInput(formId, platformId) {
         disableAddButtons();
         console.log($(formId).serializeArray());
         if($(formId).serializeArray().length === 0){
-            invalidInput(platformId, 3, event);
+            invalidInput(platformId, 3);
         }
         else{
             if ($(formId)[0].checkValidity() === false) {
-                invalidInput(platformId, 0, event);
+                invalidInput(platformId, 0);
             }
             //channel already added
             else if (channelsList.includes($(formId).serializeArray()[0]["value"])) {
-                invalidInput(platformId, 1, event);
+                invalidInput(platformId, 1);
             }
             else {
                 //0 is twitch input field, does not match twitch channel pattern
                 if (platformId == 0 && ($(formId).serializeArray()[0]["value"]).match(twitchRe) === null) {
-                    invalidInput(platformId, 2, event);
+                    invalidInput(platformId, 2);
                 }
                 //1 is youtube input field, does not match youtube url pattern
                 else if (platformId == 1 && ($(formId).serializeArray()[0]["value"]).match(youtubeRe) === null) {
-                    invalidInput(platformId, 2, event);
+                    invalidInput(platformId, 2);
                 }
                 else {
                     if (channelsList.length >= maxChannels) {
-                        invalidInput(null, 3, event);
+                        invalidInput(null, 3);
                     }
                     else {
                         var userInput = $(formId).serializeArray()[0]["value"];
-                        addStream(userInput);
+                        addStream(userInput, platformId);
                         $(formId)[0].classList.add("was-validated");
                         if(platformId == 0){
                             $("#twitch-channel").removeClass("is-invalid").addClass("is-valid");
@@ -299,9 +303,7 @@
         }
     }
 
-    function invalidInput(field, type, event){
-        event.preventDefault();
-        event.stopPropagation();
+    function invalidInput(field, type){
         enableAddButtons();
         toggleLoading();
         if(field === 0){
@@ -309,8 +311,11 @@
             if(type === 1){  
                 $("#twitch-input-feedback").html("Channel already added.");
             }   
-            else{
+            else if(type === 2){
                 $("#twitch-input-feedback").html("Invalid Twitch Channel");
+            }
+            else{
+                $("#twitch-input-feedback").html("Channel offline or does not exist.");
             }
         }
         else if(field === 1){
@@ -318,8 +323,11 @@
             if(type === 1){
                 $("#youtube-input-feedback").html("Channel already added");
             }
-            else{
+            else if(type === 2){
                 $("#youtube-input-feedback").html("Invalid Youtube URL");
+            }
+            else{
+                $("#youtube-input-feedback").html("Channel offline or does not exist.");
             }
         }
         else{
@@ -329,13 +337,14 @@
         }
     }
 
-    function addStream(userInput){
+    function addStream(userInput, platform){
         channels[userInput] = {
             "status": 1, //1 = online, 0 = offline
             'numChecked': 0, //number of items this channel was checked
             "channelInfo": null, //derived from api calls
             "viewersStats": [0, 0, 0, 0], //total viewers, current viewers, peak viewers, data count
-            "addedToDB": 0 //0 = not added, 1 = channel added, 2 = stream added
+            "addedToDB": 0, //0 = not added, 1 = channel added, 2 = stream added
+            "platform": platform //0 = twitch, 1 = youtube
         };
         channelsList.push(userInput);
         //console.log(channels);
@@ -428,15 +437,11 @@
             url: "/getViewershipStats",
             data: {
                 channels: channels,
-                chanList: channelsList,
-                labels: config.data.labels,
-                _id: window.location.href.split('/')[4]
+                chanList: channelsList
             },
             method: "POST",
             dataType: "JSON",
             success: function(res) {
-                console.log(typeof(res));
-                console.log(res);
                 channels = res[1];
                 var d = new Date(0); //get date from epoch
                 d.setUTCSeconds(res[0]);
@@ -492,13 +497,17 @@
                 var chanId = chanData["channelInfo"]["id"];
                 if (chanData["status"] == 1) {
                     //add the info of new channels
-                    if (chanData["numChecked"] == 1 && currentViewers >= 0) {
+                    if (!datasetExists(chanData["channelInfo"]["channel"])) {
                         addStreamInfo(chanData);
                     }
                     output["viewershipSum"] += currentViewers;
                     //create the list elements for channels which contributed to peak viewership
                     output["peakViewersHTML"] += "<li>" + chanData["channelInfo"]["channel"] + " - " + currentViewers + "</li>";
                     updateStreamInfo(chanData);
+                    if($("#status-" + chanId).hasClass("offline")){
+                        $("#status-" + chanId).removeClass("offline").addClass("online");
+                        $("#status-" + chanId).attr("title", "Online");                        
+                    }
                 }
                 else if ($("#status-" + chanId).hasClass("online")) {
                         //indicate a channel that has gone offline
@@ -506,9 +515,12 @@
                         $("#status-" + chanId).attr("title", "Offline");
                 }
                 output["dataToAdd"].push(currentViewers);
+                console.log(chanData);
+                viewershipHistory[chanData["channelInfo"]["channel"]].push(currentViewers);
                 $("#stream-viewers-" + chanId).html(chanData["viewersStats"][1] + " <span class='viewers octicon octicon-person'></span>");
             }
             else{
+                invalidInput(channels[channelsList[i]]["platform"], 3);
                 //remove channel that is offline or does not exists form list from list and channels object
                 if(channelsList[i] in channels){
                     delete channels[channelsList[i]];
@@ -662,9 +674,10 @@
         };
         config.data.datasets.push(newDataset);
 
+        viewershipHistory[channel] = [];
         for(var i = 0; i < config.data.datasets[0].data.length; i++){
             newDataset.data.push(null);
-            channelInfo["viewersHist"].unshift(null);
+            viewershipHistory[channel].unshift(null);
         }
         window.myLine.update();        
     }
@@ -688,6 +701,15 @@
             }
         }
         window.myLine.update();   
+    }
+
+    function datasetExists(label){
+        for(var i = 0; i < config.data.datasets.length; i++){
+            if(config.data.datasets[i].label === label){
+                return true;
+            }
+        }
+        return false;
     }
 
     function addDataPoints(label, dataRow){

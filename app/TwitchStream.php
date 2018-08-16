@@ -93,7 +93,16 @@ class TwitchStream extends Livestream{
 			$channelId = $user['users'][0]['_id'];
 		}
 		$stream = $this->getApiResponse($this->_API_V5['streams'] . $channelId);
-		return $stream === null ? $stream : $stream['stream'];
+		if($stream == null){
+			Log::error($this->channelName);
+			return null;
+		}
+		else if(!array_key_exists('stream', $stream)){
+			Log::error($this->channelName);
+			Log::error(var_dump($stream));
+			return null;
+		}
+		return $stream['stream'];
 	}
 
 	function getTopLivestreams($limit = 25){

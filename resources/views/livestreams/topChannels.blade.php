@@ -14,10 +14,10 @@
 		<hr class="featurette-divider">
 		
 		<div class="row">
-			<div class="card-deck">
+			<div class="card-deck" id="top-streams-cont">
 			@foreach ($data as $stream)
 				<div class="col-lg-4 mb-4 d-flex align-items-stretch">
-					<div class="card border-info">
+					<div class="card border-info top-stream-card">
 						<div class="card-header bg-transparent text-success d-flex justify-content-between align-items-center">
 							<strong>
 								{{ $stream['viewers'] }}

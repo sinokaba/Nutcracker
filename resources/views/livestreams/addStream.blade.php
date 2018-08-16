@@ -45,27 +45,29 @@
             </div>
         </div>
         <div class="col-md-4" id="side-content">
-            <div class="media text-muted pt-3 custom-flex justify-content-center">
-                <h3 class="my-0 success">
-                    Live Tracking 
-                </h3>
-            </div>
 
-            <hr class="featurette-divider">
-
-            <div class="media text-muted pt-3 custom-flex justify-content-between">
+            <div class="media text-muted">
                 <h5 class="my-0">
-                    <a href="#">Dyrus, TheOddone, LOL</a>
+                    <img src="{{ asset('imgs/twitch_icon.png') }}" alt="twitch_icon" style="width:1.5em">
                 </h5>
+                <ul class="track-input-ref">
+                    <li>twitch.tv/<span class="text-success">{channel_name}</span></li>
+                    <li>5-25 characters consisting of numbers and letters</li>
+                </ul>
             </div>
-            <div class="media text-muted pt-3 custom-flex justify-content-between">
+            <div class="media text-muted">
                 <h5 class="my-0">
-                    <a href="#">Riotgames, pvpes, ogaming</a>
+                    <img src="{{ asset('imgs/youtube_icon.png') }}" alt="youtube_icon" style="width:1.5em">
                 </h5>
+                <ul class="track-input-ref">
+                    <li>Youtube URL for a channel or a video</li>
+                    <li><span class="text-success">https://www.youtube.com/channel/{channel_id}</span></li>
+                    <li><span class="text-success">https://www.youtube.com/watch=?v{video_id}</span></li>
+                </ul>
             </div>
 
-            <div class="media text-muted pt-3 custom-flex justify-content-center">
-                <h3 class="my-0 success">Top Streams</h3>
+            <div class="media text-muted justify-content-center">
+                <h4 class="my-0 success">Top Online Streams</h4>
             </div>
 
             <hr class="featurette-divider">

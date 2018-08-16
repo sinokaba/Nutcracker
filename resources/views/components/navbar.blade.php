@@ -11,10 +11,10 @@
                 <a class="nav-link" href="/">Home<span class="sr-only">(current)</span></a>
             </li>
             <li class="nav-item {{ Request::segment(1) === 'trackViewership' ? 'active' : null }}">
-                <a class="nav-link" href="/trackViewership">Live Viewership Tracker</a>
+                <a class="nav-link" href="/trackViewership">Tracker</a>
             </li>
             <li class="nav-item {{ Request::segment(1) === 'topStreams' ? 'active' : null }}">
-                <a class="nav-link" href="/topStreams">Live Now</a>
+                <a class="nav-link" href="/topStreams">Top Livestreams</a>
             </li>
             <li class="nav-item {{ Request::segment(1) === 'about' ? 'active' : null }}">
                 <a class="nav-link" href="{{ url('/about') }}">About</a>
