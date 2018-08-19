@@ -5,9 +5,9 @@ use Illuminate\Support\Facades\Log;
 
 #get chat data url = https://tmi.twitch.tv/group/user/imaqtpie/chatters
 class Livestream{
-	protected $start, $end, $viewersOverTime, $period;
+	protected $start, $viewersOverTime, $period;
 	#protected $estTimezone = 'America/New_York';
-	public $streamTitle, $game, $offline, $channelName, $peakViewership, $totalViewership, $freq, $s;
+	public $game, $offline, $channelName, $channelId, $peakViewership, $totalViewership, $freq, $end, $tries;
 
 	//stream period for collecting given will be in minutes, freq is how many times per minute stats will be collected
 	function __construct($freq = null){
@@ -15,6 +15,7 @@ class Livestream{
 		array_push($this->viewersOverTime, array('Time', 'Concurrent Viewers'));
 		$this->freq = 0;
 		$this->totalViewership = 0;
+		$this->tries = 0;
 		#date_default_timezone_set($this->estTimezone);
 	}
 
@@ -29,6 +30,10 @@ class Livestream{
 
 	function getChannelName(){
 		return $this->channelName;
+	}
+
+	function getChannelId(){
+		return $this->channelId;
 	}
 
 	function getDataJson(){

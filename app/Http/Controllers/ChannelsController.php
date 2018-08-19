@@ -79,14 +79,6 @@ class ChannelsController extends Controller
                 else{
                     $channels[$channelsList[$i]]['viewersStats'][1] = 0;
                     $channels[$channelsList[$i]]['status'] = 0;
-                    //add the average viewership data for the channel if the channel goes offline and its viewership has been tracked
-                    if($channels[$channelsList[$i]]['channelInfo'] !== null && $channels[$channelsList[$i]]['addedToDB'] == 1){
-                        if($channels[$channelsList[$i]]['viewersStats'][2] > 0){
-                            $avgViewership = floor($channels[$channelsList[$i]]['viewersStats'][0]/$channels[$channelsList[$i]]['viewersStats'][3]);
-                            $this->storeStreamViewership($channels[$channelsList[$i]]['channelInfo'], $avgViewership, $channels[$channelsList[$i]]['viewersStats'][2]);
-                            $channels[$channelsList[$i]]['addedToDB'] = 2;
-                        }
-                    }
                 }
             }
             $channels[$channelsList[$i]]['numChecked']++;
@@ -108,26 +100,18 @@ class ChannelsController extends Controller
             $chan->channel_id = $streamInfo['channelId'];
             $chan->platform = $streamInfo['platform'] == 'Twitch' ? 0 : 1;
             $chan->creation = date_format(date_create($streamInfo['channelCreation']), 'Y-m-d H:i:s');
-            $chan->followers = $streamInfo['followers'];
-            $chan->total_views = $streamInfo['totalViews'];
             $chan->num_searched = 1;
             $chan->save();
         }
-        else if(Channel::where('channel_id', $streamInfo['channelId'])->first()->total_views !== $streamInfo['totalViews']){
-            $query = Channel::where('channel_id', $streamInfo['channelId'])->first();
-            $query->followers = $streamInfo['followers'];
-            $query->total_views = $streamInfo['totalViews'];
-            $query->increment('num_searched');
-        }
     }
 
-    public function storeStreamViewership($streamInfo, $avgViewers, $peakViewers){
+    public function storeStreamViewership($streamInfo, $avgViewers, $peakViewers, $end = null){
         if(Channel::where('channel_id', $streamInfo['channelId'])->first() !== null){
             $livestream = new Stream();
             $livestream->avg_viewers = $avgViewers;
             $livestream->peak_viewers = $peakViewers;
             $livestream->stream_start = date('Y-m-d H:i:s', $streamInfo['createdAt']); #stream creation timestamp
-            $livestream->stream_end = date('Y-m-d H:i:s', time()); #stream end timestamp, get he current time now in utc
+            $livestream->stream_end = $end === null ? date('Y-m-d H:i:s', time()) : $end; #stream end timestamp, get he current time now in utc
             $livestream->category = $streamInfo['cat'];
             $livestream->channel_id = $streamInfo['channelId']; #$foreign key referring to channels table
             $livestream->followers = $streamInfo['followers'];
@@ -147,23 +131,33 @@ class ChannelsController extends Controller
         $v->save();
     }
 
+    public function getOnlineStreams($num, $added){
+        $twitch = new twitchStream(null);
+        $youtube = new youtubeStream(null);
+        $topTwitch = $twitch->getTopLivestreams($num);
+        $topYoutube = $youtube->getTopLivestreams($num);
+
+        for($i = 0; $i < $num; $i++){
+            if($topYoutube !== null){
+                $yt = new youtubeStream(null, $topYoutube[$i]['id']['videoId']);
+                if(!array_key_exists($yt->getChannelId(), $added) && !$yt->offline){
+                    $added[$yt->getChannelId()] = $yt;
+                }
+            }
+            $tw = new twitchStream(null, $topTwitch[$i]['user_id']);
+            if(!array_key_exists($tw->getChannelId(), $added) && !$tw->offline){
+                $added[$tw->getChannelId()] = $tw;
+            }
+        }        
+        return $added;
+    }
+
     public function collectTopStreamersData(){
         set_time_limit(0); #ensure that the php script doesn't timeout as it is executing
 
         //get hte top 50 streams from youtube and twitch
 
         $numStreams = 100;
-        $twitch = new twitchStream(null);
-        $youtube = new youtubeStream(null);
-        $topTwitch = $twitch->getTopLivestreams($numStreams);
-        $topYoutube = $youtube->getTopLivestreams($numStreams);
-
-        //push the youtube/twitch channel objects to an array for processing
-        $streamsToTrack = array();
-        //this will hold the channel information of each youtube/twitch channel analyzed, since we can't get it if stream offline
-        $streamChanInfo = array();
-        $addedChannels = array();
-
         
         //$allChannels = Channel::all();
         //$channelsFile = 'channels.txt';
@@ -187,23 +181,17 @@ class ChannelsController extends Controller
         }
         //fclose($handleFile);
         */
-        for($i = 0; $i < $numStreams; $i++){
-            $yt = new youtubeStream(null, $topYoutube[$i]['id']['videoId']);
-            $tw = new twitchStream(null, $topTwitch[$i]['user_id']);
-            if(!in_array($yt->channelName, $addedChannels) && !in_array($tw->channelName, $addedChannels)){
-                if(!$yt->offline){
-                    array_push($streamsToTrack, $yt);
-                }
-                if(!$tw->offline){
-                    array_push($streamsToTrack, $tw);
-                }
-            }
+        $savefile = "stream_data.json";
+        if(file_exists($savefile)){
+            $streamsToTrack = json_decode(file_get_contents($savefile));
         }
-        $done = array();
-        while(count($streamsToTrack) > count($done)){
-            for($i = 0; $i < count($streamsToTrack); $i++){
-                $chan = $streamsToTrack[$i];
-                if(!in_array($chan->channelName, $done)){
+        //push the youtube/twitch channel objects to an array for processing
+        $streamsToTrack = $this->getOnlineStreams($numStreams, array());
+        //this will hold the channel information of each youtube/twitch channel analyzed, since we can't get it if stream offline
+        $streamChanInfo = array();
+        $numSleep = 0;
+        while(!empty($streamsToTrack)){
+            foreach($streamsToTrack as $id => $chan){
                     error_log($chan->platform . ' ' . $chan->channelName);
                     $viewers = $chan->getCurrentViewers();
                     if($viewers >= 0){
@@ -212,18 +200,17 @@ class ChannelsController extends Controller
                             $chan->peakViewership = $viewers;
                         }
                         $chan->freq += 1;
+                        $chan->end = null;
                         if($chan->freq <= 1){
                             $streamInfo = $chan->getStreamInfo();
                             if($streamInfo['channel'] !== null){
                                 //if followers/subs is low then that means that channel is most likely viewbotted or streaming illegal content
                                 //it will not be added to the database
                                 if($streamInfo['followers'] <= 100){
-                                    array_push($done, $chan->channelName);
+                                    unset($streamsToTrack[$id]);
                                 }
                                 else{
-                                    $this->storeChannel($streamInfo);
-                                    $avgViewership = floor($chan->totalViewership/$chan->freq);
-                                    $this->storeStreamViewership($streamInfo, $avgViewership, $chan->peakViewership);                                    
+                                    $this->storeChannel($streamInfo);                                 
                                 }
                             }                   
                             $streamChanInfo[$chan->channelName] = $streamInfo;
@@ -231,16 +218,27 @@ class ChannelsController extends Controller
                     }
                     else{
                         //channels that have recently gone offline and have been checked at least once will be added to the db
-                        if($chan->freq > 0){
-                            $avgViewership = floor($chan->totalViewership/$chan->freq);
-                            $this->storeStreamViewership($streamChanInfo[$chan->channelName], $avgViewership, $chan->peakViewership);
+                        $chan->tries += 1;
+                        if($chan->end === null){
+                            $chan->end = date('Y-m-d H:i:s', time());
                         }
-                        array_push($done, $chan->channelName);
+                        if($chan->tries > 2){
+                            if($chan->freq > 0){
+                                $avgViewership = floor($chan->totalViewership/$chan->freq);
+                                $this->storeStreamViewership($streamChanInfo[$chan->channelName], $avgViewership, $chan->peakViewership, $chan->end);
+                            }
+                            unset($streamsToTrack[$id]);
+                        }
                     }
-                }
             }
-            error_log('PAUSING. Channels left: ' . (count($streamsToTrack) - count($done)));
+            error_log('PAUSING. Channels left: ' . count($streamsToTrack));
+            file_put_contents($savefile, json_encode($streamsToTrack));
             sleep(60);
+            $numSleep++;
+            if($numSleep%10 === 0){
+                error_log("Cheecking for online streams");
+                $streamsToTrack = $this->getOnlineStreams($numStreams, $streamsToTrack);
+            }
         }
     }
 

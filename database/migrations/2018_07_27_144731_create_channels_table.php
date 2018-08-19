@@ -20,8 +20,6 @@ class CreateChannelsTable extends Migration
             $table->string('channel_id')->unique();
             $table->integer('platform'); #0 = twitch, 1 = youtube
             $table->datetime('creation');
-            $table->bigInteger('followers');
-            $table->bigInteger('total_views');
             $table->integer('num_searched');
         });
     }

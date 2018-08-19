@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Log;
 
 class youtubeStream extends Livestream{
 	private $apiKey, $rateLimitReached;
-	private $channelId, $videoId, $categories;
+	private $videoId, $categories;
 	public $platform = 'Youtube';
 	private $maxStreams = 50;
 	//all the urls to make youtube api calls
@@ -156,6 +156,19 @@ class youtubeStream extends Livestream{
 		return null;
 	}
 
+	function getChannelInfo(){
+		$channelStats = $this->getChannelDetails()[0];
+		return array(
+			'channel' => $channelStats['snippet']['title'],
+			'logo' => $channelStats['snippet']['thumbnails']['high']['url'],
+			'url' => 'https://www.youtube.com/channel/' . $this->channelId,
+			'followers' => $channelStats['statistics']['subscriberCount'],
+			'totalViews' => $channelStats['statistics']['viewCount'],
+			'channelCreation' => $channelStats['snippet']['publishedAt'],
+			'channelId' => $this->channelId,
+			'platform' => $this->platform
+		);		
+	}
 	function getStreamInfo(){
 		$channelStats = $this->getChannelDetails()[0];
 		$livestreamInfo = $this->getLivestreamDetails($this->videoId)[0];
@@ -176,7 +189,7 @@ class youtubeStream extends Livestream{
 			'id' => $this->channelId,
 			'cat' => $this->game,
 			'title' => $streamInfo['title'],
-			'logo' => $channelStats['snippet']['thumbnails']['high'],
+			'logo' => $channelStats['snippet']['thumbnails']['high']['url'],
 			'url' => 'https://www.youtube.com/channel/' . $this->channelId,
 			'createdAt' => strtotime($livestreamInfo['liveStreamingDetails']['actualStartTime']),
 			'followers' => $channelStats['statistics']['subscriberCount'],

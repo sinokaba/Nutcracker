@@ -30,7 +30,6 @@ class TwitchStream extends Livestream{
 	private $userExists;
 	private $header;
 	private $streamInfo;
-	private $channelId;
 	private $maxStreams = 100;
 	public $platform = 'Twitch';
 
@@ -145,11 +144,22 @@ class TwitchStream extends Livestream{
 		return null;
 	}
 
+	function getChannelInfo(){
+		$channel = $this->getApiResponse($this->_API_V5['channels'] . $this->channelId);
+		return array(
+			'followers' => $channel['followers'],
+			'totalViews' => $channel['views'],
+			'logo' => $channel['logo']
+		);
+	}
+
 	function getStreamInfo(){
 		if(!$this->isOffline()){
 			$chatters = $this->getNumChatters();
 			//error_log('chatters: ' . $chatters['chatter_count']);
-			//error_log(var_dump($chatters));
+			if(!array_key_exists('chatter_count', $chatters)){
+				Log::info(print_r($chatters, true));
+			}
 			return array(
 				'channel' => $this->streamInfo['channel']['name'],
 				'id' => $this->streamInfo['channel']['_id'],

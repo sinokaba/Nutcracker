@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container">
-    <form class="needs-validation" id="tw-channel-form" onkeypress="return event.keyCode != 13;" novalidate>
+    <form class="needs-validation" id="tw-channel-form" novalidate>
         <div class="form-row justify-content-center">
             <div class="col-auto my-1" style="width:9em">
                 <label>
@@ -12,7 +12,7 @@
                 </label>
             </div>
             <div class="col-auto">
-                <input type="text" class="form-control mb-2" style="width:24em" name="twitch-channel" maxlength="25" id="twitch-channel" placeholder="riotgames" style="width:21em" required>
+                <input class="form-control mb-2 track-input" name="twitch-channel" maxlength="25" id="twitch-channel" placeholder="riotgames" disabled required>
                 <div class="invalid-feedback" id="twitch-input-feedback">
                     Invalid Twitch channel
                 </div>
@@ -25,7 +25,7 @@
             </div>
         </div>
     </form>
-    <form class="needs-validation" id="yt-channel-form" onkeypress="return event.keyCode != 13;" novalidate>
+    <form class="needs-validation" id="yt-channel-form" novalidate>
         <div class="form-row justify-content-center">
             <div class="col-auto my-1" style="width:9em">
                 <label>
@@ -35,8 +35,8 @@
                 </label>
             </div>
             <div class="col-auto">
-                <input type="text" class="form-control mb-2" style="width:24em" name="youtube-channel" maxlength="60" id="youtube-channel" placeholder="https://www.youtube.com/CHANNEL" required>
-                <div class="invalid-feedback" id="twitch-input-feedback">
+                <input class="form-control mb-2 track-input" name="youtube-channel" maxlength="60" id="youtube-channel" placeholder="https://www.youtube.com/CHANNEL" disabled required>
+                <div class="invalid-feedback" id="youtube-input-feedback">
                     Invalid Youtube URL
                 </div>
             </div>
@@ -258,11 +258,32 @@
         checkInput("#youtube-channel", 1);
     });
 
+    document.getElementById("twitch-channel").onkeydown = function(event){
+        if(event.keyCode == 13){
+            if (channelsList.length > 0) {
+                $("#mini-loader-tw").toggleClass("invis");
+            }
+            checkInput("#twitch-channel", 0);        
+            return false;
+
+        }
+    }
+
+    document.getElementById("youtube-channel").onkeydown = function(event){
+        if(event.keyCode == 13){
+            if (channelsList.length > 0) {
+                $("#mini-loader-yt").toggleClass("invis");
+            }
+            checkInput("#youtube-channel", 1);        
+            return false;
+        }
+    }
+
     // Loop over them and prevent submission
     function checkInput(formId, platformId) {
         disableAddButtons();
         console.log($(formId).serializeArray());
-        if($(formId).serializeArray().length === 0){
+        if($(formId).val() === ""){
             invalidInput(platformId, 3);
         }
         else{
@@ -307,7 +328,6 @@
         enableAddButtons();
         toggleLoading();
         if(field === 0){
-            $("#twitch-channel").removeClass("is-valid").addClass("is-invalid");
             if(type === 1){  
                 $("#twitch-input-feedback").html("Channel already added.");
             }   
@@ -317,9 +337,9 @@
             else{
                 $("#twitch-input-feedback").html("Channel offline or does not exist.");
             }
+            $("#twitch-channel").removeClass("is-valid").addClass("is-invalid");
         }
         else if(field === 1){
-            $("#youtube-channel").removeClass("is-valid").addClass("is-invalid");
             if(type === 1){
                 $("#youtube-input-feedback").html("Channel already added");
             }
@@ -329,6 +349,7 @@
             else{
                 $("#youtube-input-feedback").html("Channel offline or does not exist.");
             }
+            $("#youtube-channel").removeClass("is-valid").addClass("is-invalid");
         }
         else{
             $("#twitch-channel").val("").prop("disabled", true);
@@ -594,6 +615,8 @@
         if ($("#add-yt-channel").is(":disabled") || $("#add-tw-channel").is(":disabled")) {
             $("#add-yt-channel").prop("disabled", false);
             $("#add-tw-channel").prop("disabled", false);
+            $("#twitch-channel").prop("disabled", false);
+            $("#youtube-channel").prop("disabled", false)
         }
     }
 

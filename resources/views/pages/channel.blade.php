@@ -27,21 +27,20 @@
                     <a href="#">Rating</a>
                 </li>
                 <li>
-                    <a href="#">Stream</a>
+                    <a onclick="showStream()">Stream</a>
                 </li>                             
                 <li>
                     <a href="#past-stream-dates" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle">Last Streams</a>
                     <ul class="collapse list-unstyled" id="past-stream-dates">
-                        <li>
-                            <a href="#">8/7/2018 2:30pm</a>
-                        </li>
-                        <li>
-                            <a href="#">8/5/2018 5:30pm</a>
-                        </li>
+                        @foreach ($streams_rev as $s)                    	
+	                        <li>
+	                            <a href="#">{{ $s->stream_start }}</a>
+	                        </li>
+                        @endforeach
                     </ul>
                 </li>
                 <li>
-                    <a href="#">Last Updated: 8/8/2018</a>
+                    <a href="#">Last Updated: {{ $date }}</a>
                 </li>
             </ul>
 
@@ -57,107 +56,121 @@
 
         <!-- Page Content Holder -->
         <div id="content">
-        	<div class="p-5 my-1 channel-header text-center">
+        	<div class="p-2 channel-header text-center">
 	            <h1 class="text-center" style="margin-bottom: 0px">
 					<button type="button" id="sidebarCollapse" class="sidebar-btn">
 					    <span></span>
 					    <span></span>
 					    <span></span>
 					</button>
-	            	{{ $chan->channel_name }}
+	            	<img src="{{ $chan['data']['logo'] }}" style="border-radius: 50%; width: 3em" alt="channel_logo">
+	            	 {{ $chan->channel_name }}
 	            </h1>
+        	</div>
+
+        	<div id="stream-embed" class="hide" align="center">
+                @php
+                	if($chan->platform === 0){ 
+                		echo "<iframe src='https://player.twitch.tv/?channel=$chan->channel_name&autoplay=false' width='720' height='405' frameborder='0' scrolling='no'></iframe>";
+        			}
+        			else{
+                    	echo "<iframe width='720' height='405' align='center' src='https://www.youtube.com/embed/$chan->channel_id' frameborder='0' allowfullscreen></iframe>";
+        			}
+        		@endphp
         	</div>
 
         	<hr class="feauturette-line">
 
-			<div class="card-group">
-			    <div class="card">
-			        <div class="card-body">
-			            <h5 class="card-title">Creation Date</h5>
-			            <p class="card-text">{{ $chan->creation }} </p>
-			        </div>
-			        <div class="card-footer">
-			            <small class="text-muted">Last updated 3 mins ago</small>
-			        </div>
-			    </div>
-			    <div class="card">
-			        <div class="card-body">
-			            <h5 class="card-title">Followers</h5>
-			            <p class="card-text">{{ $chan->followers }}</p>
-			        </div>
-			        <div class="card-footer">
-			            <small class="text-muted">Last updated 3 mins ago</small>
-			        </div>
-			    </div>
-			    <div class="card">
-			        <div class="card-body">
-			            <h5 class="card-title">Total Views</h5>
-			            <p class="card-text">{{ $chan->total_views }}</p>
-			        </div>
-			        <div class="card-footer">
-			            <small class="text-muted">Last updated 3 mins ago</small>
-			        </div>
-			    </div>
-			</div>
-			<div class="card-group">
-			    <div class="card">
-			        <div class="card-body">
-			            <h5 class="card-title">Peak Viewers</h5>
-			            <p class="card-text">1000</p>
-			        </div>
-			        <div class="card-footer">
-			            <small class="text-muted">Last updated 3 mins ago</small>
-			        </div>
-			    </div>
-			    <div class="card">
-			        <div class="card-body">
-			            <h5 class="card-title">Average Viewers</h5>
-			            <p class="card-text">2123</p>
-			        </div>
-			        <div class="card-footer">
-			            <small class="text-muted">Last updated 3 mins ago</small>
-			        </div>
-			    </div>
-			    <div class="card">
-			        <div class="card-body">
-			            <h5 class="card-title">Chat Activty</h5>
-			            <p class="card-text">80%</p>
-			        </div>
-			        <div class="card-footer">
-			            <small class="text-muted">Last updated 3 mins ago</small>
-			        </div>
-			    </div>
-			</div>	
-			<div class="card-group">
-			    <div class="card">
-			        <div class="card-body">
-			            <h5 class="card-title">Average Hours streamed per week</h5>
-			            <p class="card-text">15</p>
-			        </div>
-			        <div class="card-footer">
-			            <small class="text-muted">Last updated 3 mins ago</small>
-			        </div>
-			    </div>
-			    <div class="card">
-			        <div class="card-body">
-			            <h5 class="card-title">Hours streamed this week</h5>
-			            <p class="card-text">10</p>
-			        </div>
-			        <div class="card-footer">
-			            <small class="text-muted">Last updated 3 mins ago</small>
-			        </div>
-			    </div>
-			    <div class="card">
-			        <div class="card-body">
-			            <h5 class="card-title">Most hours streamed a day</h5>
-			            <p class="card-text">24}</p>
-			        </div>
-			        <div class="card-footer">
-			            <small class="text-muted">Last updated 3 mins ago</small>
-			        </div>
-			    </div>
-			</div>		
-            <p>Stream Category breakdown</p>
+        	<div id="channel-stats">
+				<div class="card-group">
+				    <div class="card">
+				        <div class="card-body">
+				            <h5 class="card-title">Creation Date</h5>
+				            <p class="card-text">{{ $chan->creation }} </p>
+				        </div>
+				        <div class="card-footer">
+				            <small class="text-muted">OG</small>
+				        </div>
+				    </div>
+				    <div class="card">
+				        <div class="card-body">
+				            <h5 class="card-title">{{ $chan->platform === 0 ? 'Followers' : 'Subscribers' }}</h5>
+				            <p class="card-text">{{ $chan['data']['followers'] }}</p>
+				        </div>
+				        <div class="card-footer">
+				            <small class="text-muted">Last updated {{ $date }}</small>
+				        </div>
+				    </div>
+				    <div class="card">
+				        <div class="card-body">
+				            <h5 class="card-title">Total Views</h5>
+				            <p class="card-text">{{ $chan['data']['totalViews'] }}</p>
+				        </div>
+				        <div class="card-footer">
+				            <small class="text-muted">Last updated {{ $date }}</small>
+				        </div>
+				    </div>
+				</div>
+				<div class="card-group">
+				    <div class="card">
+				        <div class="card-body">
+				            <h5 class="card-title">Peak Viewers</h5>
+				            <p class="card-text">{{ $peak }}</p>
+				        </div>
+				        <div class="card-footer">
+				            <small class="text-muted">Last updated 3 mins ago</small>
+				        </div>
+				    </div>
+				    <div class="card">
+				        <div class="card-body">
+				            <h5 class="card-title">Average Viewers</h5>
+				            <p class="card-text">{{ $avg_viewers }}</p>
+				        </div>
+				        <div class="card-footer">
+				            <small class="text-muted">Last updated 3 mins ago</small>
+				        </div>
+				    </div>
+				    <div class="card">
+				        <div class="card-body">
+				            <h5 class="card-title">Chat Activty</h5>
+				            <p class="card-text">{{ $chat }}</p>
+				        </div>
+				        <div class="card-footer">
+				            <small class="text-muted">Last updated 3 mins ago</small>
+				        </div>
+				    </div>
+				</div>	
+				<div class="card-group">
+				    <div class="card">
+				        <div class="card-body">
+				            <h5 class="card-title">Average Hours streamed per week</h5>
+				            <p class="card-text">{{ $avg_hours }}</p>
+				        </div>
+				        <div class="card-footer">
+				            <small class="text-muted">Last updated 3 mins ago</small>
+				        </div>
+				    </div>
+				    <div class="card">
+				        <div class="card-body">
+				            <h5 class="card-title">Hours streamed this week</h5>
+				            <p class="card-text">{{ $hours }}</p>
+				        </div>
+				        <div class="card-footer">
+				            <small class="text-muted">Last updated 3 mins ago</small>
+				        </div>
+				    </div>
+				    <div class="card">
+				        <div class="card-body">
+				            <h5 class="card-title">Most hours streamed a day</h5>
+				            <p class="card-text">{{ $max_hours }}</p>
+				        </div>
+				        <div class="card-footer">
+				            <small class="text-muted">Last updated 3 mins ago</small>
+				        </div>
+				    </div>
+				</div>		
+	            <p>Stream Category breakdown</p>
+	        </div>
 
 			<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
 			    <h1 class="h2">Broadcast History</h1>
@@ -179,38 +192,26 @@
 			        <thead>
 			            <tr>
 			                <th>Date</th>
-			                <th>Views</th>
-			                <th>Followers</th>
+			                <th>Duration</th>
+			                <th>Views+</th>
+			                <th>Followers+</th>
 			                <th>Average Viewers</th>
 			                <th>Peak Viewers</th>
 			                <th>Category</th>
 			            </tr>
 			        </thead>
 			        <tbody>
-			            <tr>
-			                <td>1,001</td>
-			                <td>Lorem</td>
-			                <td>ipsum</td>
-			                <td>dolor</td>
-			                <td>sit</td>
-			                <td>idk</td>
-			            </tr>
-			            <tr>
-			                <td>1,002</td>
-			                <td>amet</td>
-			                <td>consectetur</td>
-			                <td>adipiscing</td>
-			                <td>elit</td>
-			                <td>idk</td>
-			            </tr>
-			            <tr>
-			                <td>1,003</td>
-			                <td>Integer</td>
-			                <td>nec</td>
-			                <td>odio</td>
-			                <td>Praesent</td>
-			                <td>idk</td>
-			            </tr>
+			        	@foreach ($streams as $stream)
+				            <tr>
+				                <td>{{ $stream->stream_start }}</td>
+				                <td>{{ $stream->duration }}</td>
+				                <td>{{ $stream->views_growth }}</td>
+				                <td>{{ $stream->followers_growth }}</td>
+				                <td>{{ $stream->avg_viewers }}</td>
+				                <td>{{ $stream->peak_viewers }}</td>
+				                <td>{{ $stream->category }}</td>
+				            </tr>
+				        @endforeach
 			        </tbody>
 			    </table>
 			</div>        
@@ -247,7 +248,7 @@
 		        height: 450
 		    };
 		    
-		    for(var i = 0; i < {!! $streams !!}.length; i++){
+		    for(var i = {!! $streams !!}.length - 1; i >= 0; i--){
 		    	data.addRow([{!! $streams !!}[i]['stream_start'], {!! $streams !!}[i]['avg_viewers'], {!! $streams !!}[i]['peak_viewers']]);
 		    }
 			
@@ -255,6 +256,10 @@
 
 	        var chart = new google.visualization.LineChart(document.getElementById("broadcast-history"));
 	        chart.draw(data, options);
+		}
+
+		function showStream(){
+			$("#stream-embed").toggleClass("hide");
 		}
     </script>
 @stop

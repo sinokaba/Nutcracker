@@ -42,7 +42,7 @@
                     <div class="col-md-7 footer-nav animated fadeInUp">
                         <div class="row justify-content-center">
                             <ul class="pages list-inline">
-                                <li class="list-inline-item"><a href="#">About Us</a></li>
+                                <li class="list-inline-item"><a href="/about">About Us</a></li>
                                 <li class="list-inline-item"><a href="#">Contacts</a></li>
                                 <li class="list-inline-item"><a href="#">Terms & Condition</a></li>
                                 <li class="list-inline-item"><a href="#">Privacy Policy</a></li>
@@ -62,6 +62,7 @@
         <script type="text/javascript">
             $(function(){
                 $("#search-channel").autocomplete({
+                    delay: 0,
                     source: '/autocomplete',
                     minlength: 2,
                     autoFocus: true
