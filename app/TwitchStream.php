@@ -110,8 +110,8 @@ class TwitchStream extends Livestream{
 		$params = array(
 			'broadcasts' => true,
 			'offset' => $next,
-			'limit' => $limit,
-		)
+			'limit' => $limit
+		);
 		$url = $this->_API_V5['channels'] . $this->channelName . '/videos?';
 		$pastBroadcasts = $this->getApiResponse($url, $params);
 		$fullData = $pastBroadcasts['videos'];

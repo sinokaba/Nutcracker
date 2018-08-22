@@ -42,7 +42,7 @@
                     <div class="col-md-7 footer-nav animated fadeInUp">
                         <div class="row justify-content-center">
                             <ul class="pages list-inline">
-                                <li class="list-inline-item"><a href="/about">About Us</a></li>
+                                <li class="list-inline-item"><a href="/about">About</a></li>
                                 <li class="list-inline-item"><a href="mailto:nutcracker@gmail.com">Contact</a></li>
                                 <li class="list-inline-item"><a href="mailto:nutcracker@gmail.com">Bug Report</a></li>
                                 <li class="list-inline-item"><a href="#">Privacy Policy</a></li>

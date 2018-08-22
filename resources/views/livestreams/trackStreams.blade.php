@@ -58,7 +58,7 @@
         <div class="col-md-8">
             <h3 id="chart-title"></h3>
             <div id="viewership-chart-container" style="position: relative; width: 100%; height: 70vh">
-                <canvas id="viewership-chart" download="nutcracker_chart.jpg">
+                <canvas id="viewership-chart">
             </div>
         </div>
         <div class="col-md-4" id="side-content">
@@ -422,9 +422,12 @@
     });
 
     $("#save-chart").on("click", function() {
-        if (!chartRendered) return; // return if chart not rendered
-            html2canvas(document.getElementById("viewership-chart-container"), {
-            onrendered: function(canvas) {
+        if (!chartRendered) {
+            return; // return if chart not rendered
+        }    
+        html2canvas($("#viewership-chart-container")[0], {
+            scale: 4,
+            onrendered: function(canvas){
                 var dlTitle = "nutcracker_chart";
                 for(var i = 0; i < streamsList.length; i++){
                     if(streams[streamsList[i]]["channelInfo"] !== null){
@@ -432,13 +435,12 @@
                     }
                 }
                 var link = document.createElement("a");
-                link.href = canvas.toDataURL("image/png", 1.0);
+                link.href = canvas.toDataURL("image/png");
                 link.download = dlTitle + ".png";
-                $("#viewership-chart-container").css({"width": "100vw", "height": "100vh"});
                 window.myLine.update();
-                link.click();
-                $("#viewership-chart-container").css({"width": "100%", "height": "70vh"});
-            }
+                link.click();  
+                link.remove();
+            }      
         })
     });
 

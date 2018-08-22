@@ -21,7 +21,7 @@
             Nutcracker
         </div>
     </div>
-    <div class="row justify-content-center welcome-page">
+    <div class="row justify-content-center text-center welcome-page">
         <div class="subtitle">
             Viewership statistics and tracking for Livestreams.
         </div>
@@ -38,27 +38,27 @@
         <div class="carousel-inner" style="height: 27em !important">
             <div class="carousel-item active">
                 <div id="twitch-embed-1" align='center'>
-                    <iframe src="https://player.twitch.tv/?channel={{ $topStreams[2] }}&autoplay=false" width="720" height="405" frameborder="0" scrolling="no"></iframe>
+                    <iframe src="https://player.twitch.tv/?channel={{ $topStreams[2] }}&autoplay=false" width="100%" height="380" frameborder="0" scrolling="no"></iframe>
                 </div>
             </div>
             <div class="carousel-item">
                 <div id="twitch-embed-2" align='center'>
-                    <iframe src="https://player.twitch.tv/?channel={{ $topStreams[3] }}&autoplay=false" width="720" height="405" frameborder="0" scrolling="no"></iframe>
+                    <iframe src="https://player.twitch.tv/?channel={{ $topStreams[3] }}&autoplay=false" width="100%" height="380" frameborder="0" scrolling="no"></iframe>
                 </div>
             </div>
             <div class="carousel-item">
                 <div id="youtube-embed-1" align='center'>
-                    <iframe width="720" height="405" align='center' src="https://www.youtube.com/embed/{{ $topStreams[0] }}" frameborder="0" allowfullscreen></iframe>
+                    <iframe height="380" width="100%" align='center' src="https://www.youtube.com/embed/{{ $topStreams[0] }}" frameborder="0" allowfullscreen></iframe>
                 </div>
             </div>
         </div>
         <a class="carousel-control-prev" href="#stream-carousel" role="button" data-slide="prev">
-        <span class="octicon octicon-chevron-left dark-icon" aria-hidden="true"></span>
-        <span class="sr-only">Previous</span>
+            <span class="octicon octicon-chevron-left" style="font-size: 5em" aria-hidden="true"></span>
+            <span class="sr-only">Previous</span>
         </a>
         <a class="carousel-control-next" href="#stream-carousel" role="button" data-slide="next">
-        <span class="octicon octicon-chevron-right dark-icon" aria-hidden="true"></span>
-        <span class="sr-only">Next</span>
+            <span class="octicon octicon-chevron-right" style="font-size: 5em" aria-hidden="true"></span>
+            <span class="sr-only">Next</span>
         </a>
     </div>
 
