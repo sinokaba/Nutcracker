@@ -104,6 +104,29 @@ class TwitchStream extends Livestream{
 		return $stream['stream'];
 	}
 
+	function getAllPastBroadcasts(){
+		$next = 0;
+		$limit = 100;
+		$params = array(
+			'broadcasts' => true,
+			'offset' => $next,
+			'limit' => $limit,
+		)
+		$url = $this->_API_V5['channels'] . $this->channelName . '/videos?';
+		$pastBroadcasts = $this->getApiResponse($url, $params);
+		$fullData = $pastBroadcasts['videos'];
+		$next += $limit;
+		$left = $pastBroadcasts['_total'] - $limit;
+		while($left > 0){
+			$params['offset'] = $next;
+			$pastBroadcasts = $this->getApiResponse($url, $params);
+			$next += $limit;
+			$left -= $limit;
+			$fullData = array_merge($fullData, $pastBroadcasts['videos']);
+		}
+		return $allData;
+	}
+
 	function getTopLivestreams($limit = 25){
 		if($limit <= $this->maxStreams){
 			$params = array('first' => $limit);
@@ -146,10 +169,12 @@ class TwitchStream extends Livestream{
 
 	function getChannelInfo(){
 		$channel = $this->getApiResponse($this->_API_V5['channels'] . $this->channelId);
+		$user = $this->getUserByName($channel['name']);
 		return array(
 			'followers' => $channel['followers'],
 			'totalViews' => $channel['views'],
-			'logo' => $channel['logo']
+			'logo' => $channel['logo'],
+			'bio' => $user['users'][0]['bio']
 		);
 	}
 

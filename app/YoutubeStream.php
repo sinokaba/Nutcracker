@@ -28,12 +28,12 @@ class youtubeStream extends Livestream{
 		$this->setChannel($youtubeChannel, $video);
 	}
 
-	function setChannel($youtubeChannel, $video){
-		if($youtubeChannel !== null || $video !== null){
-			$this->videoId = $video;
+	function setChannel($channelId, $videoId){
+		if($channelId !== null || $videoId !== null){
+			$this->videoId = $videoId;
 			//if a youtube channel url is given, then get the video id of livestream
-			if($youtubeChannel !== null){
-				$liveChanInfo = $this->getLiveVideoByChannel($youtubeChannel);
+			if($channelId !== null){
+				$liveChanInfo = $this->getLiveVideoByChannel($channelId);
 				$this->videoId = $liveChanInfo[0]['id']['videoId'];
 			}
 			//Log::error($this->videoId); //log the video id of current youtube class, to help debug any unforseen errors
@@ -92,8 +92,8 @@ class youtubeStream extends Livestream{
 		return $allData;
 	}
 
-	function getChannelDetails($channel = null){
-		$chan = $channel === null ? $this->channelId : $channel; 
+	function getChannelDetails($channelId = null){
+		$chan = $channelId === null ? $this->channelId : $channelId; 
 		$params = array(
 			'part' => 'snippet,statistics',
 			'id' => $chan,
@@ -156,8 +156,8 @@ class youtubeStream extends Livestream{
 		return null;
 	}
 
-	function getChannelInfo(){
-		$channelStats = $this->getChannelDetails()[0];
+	function getChannelInfo($channelId){
+		$channelStats = $this->getChannelDetails($channelId)[0];
 		return array(
 			'channel' => $channelStats['snippet']['title'],
 			'logo' => $channelStats['snippet']['thumbnails']['high']['url'],
@@ -166,7 +166,8 @@ class youtubeStream extends Livestream{
 			'totalViews' => $channelStats['statistics']['viewCount'],
 			'channelCreation' => $channelStats['snippet']['publishedAt'],
 			'channelId' => $this->channelId,
-			'platform' => $this->platform
+			'platform' => $this->platform,
+			'bio' => 'lol'
 		);		
 	}
 	function getStreamInfo(){
@@ -223,7 +224,7 @@ class youtubeStream extends Livestream{
 		if($this->isOffline()){
 			return -1;
 		}
-	    return (int)file_get_contents($this->_API['live.viewers'] . $this->videoId);					
+	    return $this->getUrlContents($this->_API['live.viewers'] . $this->videoId);					
 	}
 
 	function trackViewership($timeInMinutes){

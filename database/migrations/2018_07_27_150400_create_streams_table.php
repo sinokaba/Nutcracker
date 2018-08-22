@@ -16,6 +16,7 @@ class CreateStreamsTable extends Migration
         Schema::create('streams', function (Blueprint $table) {
             $table->increments('id');
             $table->integer('avg_viewers');
+            $table->string('title');
             $table->integer('peak_viewers');
             $table->bigInteger('followers');
             $table->bigInteger('total_views');

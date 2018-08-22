@@ -109,9 +109,10 @@ ul.CTAs a {
     margin-bottom: 5px;
 }
 
-a.download {
+a.button-white {
     background: #fff;
     color: #7386D5;
+    font-weight: 500;
 }
 
 a.article, a.article:hover {

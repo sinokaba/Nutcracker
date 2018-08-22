@@ -7,7 +7,7 @@
 				<h1>Top Gaming Streams</h1>
 			</div>
 			<div class="col-md-1">
-				<a class="btn btn-primary pull-right" type="button" href="/topStreams" id="refreshTopChannels">Refresh</a>
+				<a class="btn btn-primary pull-right" type="button" href="/topStreamsRef" id="refreshTopChannels">Refresh</a>
 			</div>
 		</div>
 

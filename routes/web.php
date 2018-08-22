@@ -18,8 +18,9 @@ Route::get('/blog', 'PostsController@blog');
 Route::get('channel/{name}', 'PagesController@getChannel');
 Route::get('/track/{id}', 'PagesController@trackStreams');
 
-Route::post('/getViewershipStats', 'ChannelsController@getStats');
+Route::post('/getViewershipStats', 'ChannelsController@getStreamStats');
 Route::get('/topStreams', 'ChannelsController@topStreams');
+Route::get('/topStreamsRef', 'ChannelsController@refreshTopStreams');
 Route::get('/trackAll', 'ChannelsController@collectTopStreamersData');
 Route::get('/channel', ['as' => 'channelSearch', 'uses' => 'ChannelsController@viewChannel']);
 Route::get('/addStream', 'ChannelsController@addStream');

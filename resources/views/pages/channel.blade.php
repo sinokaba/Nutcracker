@@ -12,13 +12,13 @@
     <div class="wrapper">
         <!-- Sidebar Holder -->
         <nav id="sidebar">
-            <div class="sidebar-header">
-                <h3>{{ $chan->platform === 0 ? 'Twitch Streamer' : 'Youtube Streamer' }}</h3>
+            <div class="sidebar-header text-center">
+                <h3>{{ $chan->platform === 0 ? 'Twitch' : 'Youtube' }}</h3>
             </div>
 
             <ul class="list-unstyled components">
                 <li class="active">
-                    <a href="#"><h4>Status: Offline</h4></a>
+                    <a href="#"><h4>Status: {{ $chan->offline == true ? 'Offline' : 'Online'}}</h4></a>
                 </li>            	
                 <li>
                     <a href="#">Rank: #1</a>
@@ -27,7 +27,7 @@
                     <a href="#">Rating</a>
                 </li>
                 <li>
-                    <a onclick="showStream()">Stream</a>
+                    <a href="#" onclick="showStream()">Stream</a>
                 </li>                             
                 <li>
                     <a href="#past-stream-dates" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle">Last Streams</a>
@@ -46,10 +46,10 @@
 
             <ul class="list-unstyled CTAs">
                 <li>
-                    <a href="{{ $chan->url }}" class="download">Channel Link</a>
+                    <a href="{{ $chan->url }}" class="button-white">Channel Link</a>
                 </li>
-                <li>
-                    <a href="https://bootstrapious.com/p/bootstrap-sidebar" class="article">Favourite</a>
+                <li style="text-align: center; cursor: pointer">
+                    <span class="oction octicon-heart" title="Favourite" style="color: red; font-size: 5em"></span>
                 </li>
             </ul>
         </nav>
@@ -63,10 +63,12 @@
 					    <span></span>
 					    <span></span>
 					</button>
-	            	<img src="{{ $chan['data']['logo'] }}" style="border-radius: 50%; width: 3em" alt="channel_logo">
+	            	<img src="{{ $chan['data']['logo'] }}" style="border-radius: 50%; width: 2em" alt="channel_logo">
 	            	 {{ $chan->channel_name }}
 	            </h1>
         	</div>
+
+        	<hr class="feauturette-line">
 
         	<div id="stream-embed" class="hide" align="center">
                 @php
@@ -79,6 +81,9 @@
         		@endphp
         	</div>
 
+        	<h3>
+        		About: <span class="text-muted">{{ $chan['data']['bio'] }}</spansss>
+        	</h3>
         	<hr class="feauturette-line">
 
         	<div id="channel-stats">
@@ -95,7 +100,7 @@
 				    <div class="card">
 				        <div class="card-body">
 				            <h5 class="card-title">{{ $chan->platform === 0 ? 'Followers' : 'Subscribers' }}</h5>
-				            <p class="card-text">{{ $chan['data']['followers'] }}</p>
+				            <p class="card-text stat-val">{{ $chan['data']['followers'] }}</p>
 				        </div>
 				        <div class="card-footer">
 				            <small class="text-muted">Last updated {{ $date }}</small>
@@ -104,7 +109,7 @@
 				    <div class="card">
 				        <div class="card-body">
 				            <h5 class="card-title">Total Views</h5>
-				            <p class="card-text">{{ $chan['data']['totalViews'] }}</p>
+				            <p class="card-text stat-val">{{ $chan['data']['totalViews'] }}</p>
 				        </div>
 				        <div class="card-footer">
 				            <small class="text-muted">Last updated {{ $date }}</small>
@@ -115,7 +120,7 @@
 				    <div class="card">
 				        <div class="card-body">
 				            <h5 class="card-title">Peak Viewers</h5>
-				            <p class="card-text">{{ $peak }}</p>
+				            <p class="card-text stat-val">{{ $peak }}</p>
 				        </div>
 				        <div class="card-footer">
 				            <small class="text-muted">Last updated 3 mins ago</small>
@@ -124,7 +129,7 @@
 				    <div class="card">
 				        <div class="card-body">
 				            <h5 class="card-title">Average Viewers</h5>
-				            <p class="card-text">{{ $avg_viewers }}</p>
+				            <p class="card-text stat-val">{{ $avg_viewers }}</p>
 				        </div>
 				        <div class="card-footer">
 				            <small class="text-muted">Last updated 3 mins ago</small>
@@ -133,7 +138,7 @@
 				    <div class="card">
 				        <div class="card-body">
 				            <h5 class="card-title">Chat Activty</h5>
-				            <p class="card-text">{{ $chat }}</p>
+				            <p class="card-text stat-val">{{ $chat }}</p>
 				        </div>
 				        <div class="card-footer">
 				            <small class="text-muted">Last updated 3 mins ago</small>
@@ -176,28 +181,32 @@
 			    <h1 class="h2">Broadcast History</h1>
 			    <div class="btn-toolbar mb-2 mb-md-0">
 			        <div class="btn-group mr-2">
-			            <button class="btn btn-sm btn-outline-secondary">Share</button>
-			            <button class="btn btn-sm btn-outline-secondary">Export</button>
+			            <button class="btn btn-sm btn-outline-secondary">Hide</button>
+			            <button class="btn btn-sm btn-outline-secondary">Save</button>
 			        </div>
-			        <button class="btn btn-sm btn-outline-secondary dropdown-toggle">
-			        <span data-feather="calendar"></span>
-			        This week
-			        </button>
+					<select class="form-control" style="width: 50%">
+					    <option value="one" default>All Time</option>
+					    <option value="two">Day</option>
+					    <option value="three">Week</option>
+					    <option value="four">Month</option>
+					    <option value="five">Year</option>
+					</select>
 			    </div>
 			</div>
-			<div class="my-4 w-100" id="broadcast-history" width="900" height="300"></div>
+			<div class="my-4 w-100" id="broadcast-history" width="100%" height="300"></div>
 			<h2>Growth</h2>
-			<div class="table-responsive">
+			<div class="table-responsive" style="height: 50vh">
 			    <table class="table table-striped table-sm">
 			        <thead>
 			            <tr>
-			                <th>Date</th>
+			                <th>Start</th>
 			                <th>Duration</th>
 			                <th>Views+</th>
-			                <th>Followers+</th>
+			                <th>{{ $chan->platform == 0 ? 'Followers+' : 'Subscribers+' }}</th>
 			                <th>Average Viewers</th>
 			                <th>Peak Viewers</th>
 			                <th>Category</th>
+			                <th>Title</th>
 			            </tr>
 			        </thead>
 			        <tbody>
@@ -205,11 +214,12 @@
 				            <tr>
 				                <td>{{ $stream->stream_start }}</td>
 				                <td>{{ $stream->duration }}</td>
-				                <td>{{ $stream->views_growth }}</td>
-				                <td>{{ $stream->followers_growth }}</td>
-				                <td>{{ $stream->avg_viewers }}</td>
-				                <td>{{ $stream->peak_viewers }}</td>
+				                <td class="stat-val {{ $stream->views_growth >= 0 ? 'text-success' : 'text-danger' }}">{{ $stream->views_growth }}</td>
+				                <td class="stat-val {{ $stream->followers_growth >= 0 ? 'text-success' : 'text-danger' }}">{{ $stream->followers_growth }}</td>
+				                <td class="stat-val {{ $stream->avg_growth >= 0 ? 'text-success' : 'text-danger' }}">{{ $stream->avg_viewers }}</td>
+				                <td class="stat-val {{ $stream->peak_growth >= 0 ? 'text-success' : 'text-danger' }}">{{ $stream->peak_viewers }}</td>
 				                <td>{{ $stream->category }}</td>
+				                <td>{{ $stream->title }}</td>
 				            </tr>
 				        @endforeach
 			        </tbody>
@@ -224,6 +234,10 @@
                 $('#sidebar').toggleClass('active');
                 $(this).toggleClass('active');
             });
+            //format large nu,bers adding spaces and commas for easier readability
+            $('.stat-val').each(function(i, obj){
+            	$(this).html($(this).html().toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","));
+            })
         });
 		google.load("visualization", "1", {
 	        "packages": ["corechart"]

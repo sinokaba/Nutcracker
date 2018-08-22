@@ -65,12 +65,25 @@
     <hr class="featurette-divider">
 
     <div class="row featurette">
+        <div class="col-md-5">
+            <h2 class="featurette-heading">Track your favourite streams. </h2>
+            <p class="lead">See the viewership of your favourite streams grow LIVE.</p>
+            <p class="lead">Youtube or Twitch, Nutcracker is the streaming hub of the web.</p>
+        </div>
         <div class="col-md-7">
-            <h2 class="featurette-heading">First featurette heading. <span class="text-muted">It'll blow your mind.</span></h2>
-            <p class="lead">Donec ullamcorper nulla non metus auctor fringilla. Vestibulum id ligula porta felis euismod semper. Praesent commodo cursus magna, vel scelerisque nisl consectetur. Fusce dapibus, tellus ac cursus commodo.</p>
+            <img class="featurette-image img-fluid mx-auto" src="{{ asset('imgs/tracking_sample.png') }}" alt="tracking_sample.png">
+        </div>
+    </div>
+    <hr class="featurette-divider">
+
+    <div class="row featurette">
+        <div class="col-md-7">
+            <img class="featurette-image img-fluid mx-auto" src="{{ asset('imgs/nut_promo.png') }}" alt="tracking_sample.png">            
         </div>
         <div class="col-md-5">
-            <img class="featurette-image img-fluid mx-auto" data-src="holder.js/500x500/auto" alt="Generic placeholder image">
+            <h2 class="featurette-heading">Get access to historical data of Livestream channels</h2>
+            <p class="lead">Youtube or Twitch, be able to view past broadcasts, peak viewers, chat activity, and much more.</p>
+            <p class="lead">As Streamers, you will be able to know how to grow your streams.</p>
         </div>
     </div>
 </div>
