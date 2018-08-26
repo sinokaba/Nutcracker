@@ -10,10 +10,10 @@
 			<div class="col-md-10 order-md-1 text-center text-md-left pr-md-5">
 				<h1 class="mb-3 bd-text-purple-bright">Nutcracker</h1>
 				<p class="lead">
-					A livestream hub spanning the biggest streaming platforms on the web today.
+					Why? To create a hub for the two biggest livestreaming platforms in the web.
 				</p>
 				<p class="lead mb-4">
-					Complete with the ability to track the streamers you want to watch.
+					Complete with the ability to track the streamers you want to watch as they are live.
 				</p>
 				<div class="d-flex flex-column flex-md-row lead mb-3">
 					<h3>Soon:</h3>

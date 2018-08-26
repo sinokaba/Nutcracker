@@ -205,8 +205,12 @@ class TwitchStream extends Livestream{
 	}
 
 	function getCurrentViewers(){
-		if($this->isOffline()){
+		$stream = $this->getStreamDetails();
+		if($stream === null){
 			return -1;
+		}
+		else if($stream['stream_type'] === 'rerun'){
+			return -2;
 		}
 		return $this->getStreamDetails()['viewers'];
 	}

@@ -70,7 +70,7 @@ class Livestream{
 		if(curl_errno($ch) > 0){
 			print curl_error($ch);
 		}
-		Log::error($url);
+		//Log::error($url);
 		curl_close($ch);
 		if($output == false && $attempts < 3){
 			return $this->getUrlContents($url, $header, $attempts++);

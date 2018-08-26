@@ -308,7 +308,6 @@ a.chan-name{
 }
 
 @media (max-width: 768px) {
-
     .track-input-ref{
         font-size: .6em;
     }
@@ -320,5 +319,11 @@ a.chan-name{
 
     .footer-bs {
         padding: 10px 20px;
+    }
+}
+
+@media (max-width: 414px) {
+    #channel-stats-bar-cont{
+        height: 30vh !important;
     }
 }

@@ -102,14 +102,29 @@ class youtubeStream extends Livestream{
 		return $this->getApiResponse($this->_API['channels'], $params);
 	}
 
-	function getChatDetails($chatId = null){
+	function getChatDetails($chatId = null, $next = null){
 		$params = array(
 			'part' => 'snippet',
 			'maxResults' => '2000',
 			'liveChatId' => $chatId,
 			'key' => $this->apiKey
 		);
+		if($next !== null){
+			$params['pageToken'] = $next;
+		}
 		return $this->getApiResponse($this->_API['live.chat'], $params, false, false);
+	}
+
+	function getNumberChatters($chatId){
+		$chatDetails = $this->getChatDetails($chatId);
+		$totalMessages = $chatDetails['pageInfo']['totalResults'];
+		$next = $chatDetails['nextPageToken'];
+		while($chatDetails['pageInfo']['totalResults'] > 0){
+			$chatDetails = $this->getChatDetails($chatId, $next);
+			$totalMessages += $chatDetails['pageInfo']['totalResults'];
+			$next = $chatDetails['nextPageToken'];
+		}
+		return $totalMessages;
 	}
 
 	function getLivestreamDetails($liveVideo){
@@ -173,9 +188,9 @@ class youtubeStream extends Livestream{
 	function getStreamInfo(){
 		$channelStats = $this->getChannelDetails()[0];
 		$livestreamInfo = $this->getLivestreamDetails($this->videoId)[0];
-		$chatters = null;
-		if($livestreamInfo !== null && in_array('activeLiveChatId', $livestreamInfo)){
-			$chatters = $this->getChatDetails($livestreamInfo['liveStreamingDetails']['activeLiveChatId']);
+		$chatters = 0;
+		if($livestreamInfo !== null && array_key_exists('activeLiveChatId', $livestreamInfo['liveStreamingDetails'])){
+			$chatters = $this->getNumberChatters($livestreamInfo['liveStreamingDetails']['activeLiveChatId']);
 		}
 		//echo $chatters;
 		$this->game = null;
@@ -198,7 +213,8 @@ class youtubeStream extends Livestream{
 			'channelCreation' => $channelStats['snippet']['publishedAt'],
 			'channelId' => $this->channelId,
 			'platform' => $this->platform,
-			'chatters' => ($chatters === null ? 0 : $chatters['pageInfo']['totalResults']) + $channelStats['statistics']['commentCount']
+			'videoViews' => $livestreamInfo['statistics']['viewCount'],
+			'chatters' => $chatters + $channelStats['statistics']['commentCount']
 		);
 	}
 

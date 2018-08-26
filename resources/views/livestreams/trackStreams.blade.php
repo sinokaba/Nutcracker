@@ -49,18 +49,10 @@
         </div>
     </form>
 
-    <hr class="featurette-divider">
-
     <div class="row justify-content-center hide" id="main-loader">
         <div class="main-loader"></div>
     </div>
-    <div class="row invis" id="tracking-content">
-        <div class="col-md-8">
-            <h3 id="chart-title"></h3>
-            <div id="viewership-chart-container" style="position: relative; width: 100%; height: 70vh">
-                <canvas id="viewership-chart">
-            </div>
-        </div>
+    <div class="row hide tracking-content">
         <div class="col-md-4" id="side-content">
             <h3 class="border-bottom border-gray pb-2 mb-0">
                 Additional Stats
@@ -99,6 +91,21 @@
             <button id="end-tracking" type="button" class="hide btn btn-danger">Stop</button>
             <button id="save-chart" type="button" class="my-btn hide btn btn-outline-success">Download Chart</button>
         </div>
+        <div class="col-md-8">
+            <h3 class="border-bottom border-gray pb-2 mb-0" id="chart-title"></h3>
+            <div id="viewership-chart-container" style="position: relative; width: 100%; height: 70vh">
+                <canvas id="viewership-chart"></canvas>
+            </div>
+        </div>
+    </div>
+    <hr class="featurette-divider">
+    <div class="row hide tracking-content" style="height: 55vh">
+        <div class="col-md-6">
+            <canvas width="900" height="600" id="channel-stats-chart"></canvas>
+        </div>
+        <div class="col-md-6">
+            <canvas width="900" height="600" id="stream-stats-chart"></canvas>
+        </div>
     </div>
 </div>
 
@@ -132,13 +139,14 @@
         }
     }
     var colorNames = {
-        red: 'rgb(255, 99, 132)',
-        orange: 'rgb(255, 159, 64)',
-        yellow: 'rgb(255, 205, 86)',
-        green: 'rgb(75, 192, 192)',
-        blue: 'rgb(54, 162, 235)',
-        purple: 'rgb(153, 102, 255)',
-        grey: 'rgb(201, 203, 207)'
+        pink: '#ff9ff3',
+        cYellow: '#feca57',
+        pRed: '#ff6b6b',
+        aRed: '#ee5253',
+        orange: '#ff9f43',
+        wcGreen: '#1dd1a1',
+        bdf: '#2e86de',
+        cyanite: '#0abde3'
     };
     var streams = {};  //keeps information of all streams added
     var streamsList = []; //keeps track of name of all streams added
@@ -158,62 +166,127 @@
     var chartRendered = false;
     var addingStream = false;
     var peakViewers = 0;
-    var config = {
+    var barConfig = {
+        type: 'bar',
+        data: {
+            labels: [], //streamer name
+            datasets: [ //stacked graph, each dataset represents a stat that each stream has
+                {
+                    label: 'Total Views',
+                    backgroundColor: colorNames.bdf,
+                    data: []
+                },
+                {
+                    label: 'Total Followers/Subs',
+                    backgroundColor: colorNames.cyanite,
+                    data: []
+                }
+            ]
+        },
+        options: {
+            title: {
+                display: true,
+                text: 'Channel Comparison'
+            },
+            tooltips: {
+                mode: 'index',
+                intersect: false
+            },
+            responsive: true,
+            scales: {
+                xAxes: [{
+                    stacked: true,
+                }],
+                yAxes: [{
+                    stacked: true
+                }]
+            }
+        }
+    }
+    var lineOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        legend: {
+            display: true
+        },
+        title: {
+            display: true,
+            text: ''
+        },
+        tooltips: {
+            mode: 'index',
+            intersect: false,
+        },
+        hover: {
+            mode: 'nearest',
+            intersect: true
+        },
+        scales: {
+            xAxes: [{
+                display: true,
+                scaleLabel: {
+                    display: true,
+                    labelString: ''
+                },
+                ticks: {
+                    display: false
+                }
+            }],
+            yAxes: [{
+                display: true,
+                scaleLabel: {
+                    display: true,
+                    labelString: ''
+                }
+            }]
+        },
+        animation: {
+            onComplete: function() {
+                chartRendered = true
+            }
+        }
+    }        
+    var mainLineConfig = {
         type: "line",
         fill: false,
         data: {
             datasets: []
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            title: {
-                display: true,
-                text: 'Live Viewership'
-            },
-            tooltips: {
-                mode: 'index',
-                intersect: false,
-            },
-            hover: {
-                mode: 'nearest',
-                intersect: true
-            },
-            scales: {
-                xAxes: [{
-                    display: true,
-                    scaleLabel: {
-                        display: true,
-                        labelString: 'Time'
-                    },
-                    ticks: {
-                        display: false
-                    }
-                }],
-                yAxes: [{
-                    display: true,
-                    scaleLabel: {
-                        display: true,
-                        labelString: 'Viewers'
-                    }
-                }]
-            },
-            animation: {
-                onComplete: function() {
-                    chartRendered = true
-                }
-            }
-        }
-    };
+        options: lineOptions
+    }
+    var statsLineConfig = {
+        type: "line",
+        fill: false,
+        data: {
+            datasets: []
+        },
+        options: lineOptions        
+    }
     //the start variable help keep track of how long the tracking has been going on
     //update variable calls the getData() funciton every interval of cd seconds
     var start, update;
 
     //enable tooltips
+
+    function setChartLabels(chart, title, x, y){
+        chart.options.title.text = title;
+        chart.options.scales.xAxes[0].scaleLabel.labelString = x;
+        chart.options.scales.yAxes[0].scaleLabel.labelString = y;
+    }
+
     $(function(){
         $("[data-toggle='tooltip']").tooltip();
-        var ctx = document.getElementById('viewership-chart').getContext('2d');
-        window.myLine = new Chart(ctx, config);
+        
+        var lineCtx = document.getElementById('viewership-chart').getContext('2d');
+        setChartLabels(mainLineConfig, 'Live Viewership', 'Time', 'Viewers');       
+        window.myLine = new Chart(lineCtx, mainLineConfig);
+        
+        var barCtx = document.getElementById('channel-stats-chart').getContext('2d');
+        window.myBar = new Chart(barCtx, barConfig);
+        
+        var statLineCtx = document.getElementById('stream-stats-chart').getContext('2d');
+        setChartLabels(statsLineConfig, 'Stats Growth', 'Time', 'Avg Viewers');
+        window.statLine = new Chart(statLineCtx, statsLineConfig);
     });
     //add the csrf token to ajax calls so that laravel can stop crying
     $.ajaxSetup({
@@ -285,28 +358,28 @@
             invalidInput(platformId, 3);
         }
         else{
+            var userInput = $(formId).serializeArray()[0]["value"];
             if ($(formId)[0].checkValidity() === false) {
-                invalidInput(platformId, 0);
+                invalidInput(platformId, 0, userInput);
             }
             //channel already added
-            else if (streamsList.includes($(formId).serializeArray()[0]["value"])) {
-                invalidInput(platformId, 1);
+            else if (streamsList.includes(userInput)) {
+                invalidInput(platformId, 1, userInput);
             }
             else {
                 //0 is twitch input field, does not match twitch channel pattern
-                if (platformId == 0 && ($(formId).serializeArray()[0]["value"]).match(twitchRe) === null) {
-                    invalidInput(platformId, 2);
+                if (platformId == 0 && (userInput).match(twitchRe) === null) {
+                    invalidInput(platformId, 2, userInput);
                 }
                 //1 is youtube input field, does not match youtube url pattern
-                else if (platformId == 1 && ($(formId).serializeArray()[0]["value"]).match(youtubeRe) === null) {
-                    invalidInput(platformId, 2);
+                else if (platformId == 1 && (userInput).match(youtubeRe) === null) {
+                    invalidInput(platformId, 2, userInput);
                 }
                 else {
                     if (streamsList.length >= maxStreams) {
-                        invalidInput(null, 3);
+                        invalidInput(null, 3, userInput);
                     }
                     else {
-                        var userInput = $(formId).serializeArray()[0]["value"];
                         addStream(userInput, platformId);
                         $(formId)[0].classList.add("was-validated");
                         if(platformId == 0){
@@ -322,18 +395,18 @@
         }
     }
 
-    function invalidInput(field, type){
+    function invalidInput(field, type, channel){
         enableAddButtons();
         toggleLoading();
         if(field === 0){
             if(type === 1){  
-                $("#twitch-input-feedback").html("Channel already added.");
+                $("#twitch-input-feedback").html(channel + " already added.");
             }   
             else if(type === 2){
                 $("#twitch-input-feedback").html("Invalid Twitch Channel");
             }
             else{
-                $("#twitch-input-feedback").html("Channel offline or does not exist.");
+                $("#twitch-input-feedback").html(channel + " offline or does not exist.");
             }
             $("#twitch-channel").removeClass("is-valid").addClass("is-invalid");
         }
@@ -476,7 +549,7 @@
                     endTracking();
                 }
                 else{
-                    updateStats(streamData, d);
+                    updateStats(streamData, d, streams);
                 }
                 toggleLoading();
                 addingStream = false;
@@ -489,12 +562,17 @@
         });
     }
 
-    function updateStats(streamData, date){
+    function updateStats(streamData, date, channelData){
         if (!setup) {
             startTracking();
         }
         console.log(streamData["dataToAdd"]);
-        addDataPoints(date, streamData["dataToAdd"]);
+        var avgViewers = []
+        for(var chan in channelData){
+            console.log(chan);
+            avgViewers.push(Math.floor(channelData[chan]["viewersStats"][0]/channelData[chan]["viewersStats"][3]));
+        }
+        addDataPoints(date, streamData["dataToAdd"], avgViewers);
 
         $("#total-viewers")[0].childNodes[0].nodeValue = streamData["viewershipSum"] + " ";
         if (streamData['viewershipSum'] > peakViewers) {
@@ -529,7 +607,6 @@
                     output["viewershipSum"] += currentViewers;
                     //create the list elements for streams which contributed to peak viewership
                     output["peakViewersHTML"] += "<li>" + chanData["channelInfo"]["channel"] + " - " + currentViewers + "</li>";
-                    updateStreamInfo(chanData);
                     if($("#status-" + chanId).hasClass("offline")){
                         $("#status-" + chanId).removeClass("offline").addClass("online");
                         $("#status-" + chanId).attr("title", "Online");                        
@@ -542,11 +619,12 @@
                 }
                 output["dataToAdd"].push(currentViewers);
                 console.log(chanData);
+                updateStreamInfo(chanData);
                 viewershipHistory[chanData["channelInfo"]["channel"]].push(currentViewers);
                 $("#stream-viewers-" + chanId).html(chanData["viewersStats"][1] + " <span class='viewers octicon octicon-person'></span>");
             }
             else{
-                invalidInput(streams[streamsList[i]]["platform"], 3);
+                invalidInput(streams[streamsList[i]]["platform"], 3, streamsList[i]);
                 //remove channel that is offline or does not exists form list from list and streams object
                 if(streamsList[i] in streams){
                     delete streams[streamsList[i]];
@@ -566,7 +644,7 @@
         var chanId = channelData["channelInfo"]["id"];
         var uptime = Math.floor((((new Date()).getTime() / 1000) - channelData["channelInfo"]["createdAt"]) / 60);
         $("#uptime-" + chanId).html(uptime + " minutes");
-        $("#stream-avg-" + chanId).html(Math.floor(channelData["viewersStats"][0] / channelData["viewersStats"][3]));
+
         if(channelData["viewersStats"][2] > $("#stream-peak-" + chanId).text()){
             $("#stream-peak-" + chanId).html(channelData["viewersStats"][2]);
         }
@@ -582,7 +660,7 @@
     function startTracking() {
         $("#chart-title").html("Tracking");
         $("#end-tracking").removeClass("hide");
-        $("#tracking-content").removeClass("invis");
+        $(".tracking-content").removeClass("hide");
         $("#save-chart").toggleClass("hide");
         setup = true;
         update = setInterval(getData, 1000 * cd);
@@ -594,9 +672,9 @@
         streamsList = [];
         setup = false;
         clearInterval(update);
-        $("#tracking-content").addClass("invis");
+        $(".tracking-content").addClass("hide");
         //empty chart data
-        //config.data.datasets = [];
+        //mainLineConfig.data.datasets = [];
         //$("#save-chart").addClass("hide");
         intervalSet = false;
         if (activeStreams === 0 && streamsList.length < 1) {
@@ -651,7 +729,7 @@
             "<div><a class='chan-name' data-toggle='collapse' href='#collapse-" + chanId + "' role='button' aria-expanded='false' aria-controls='collapseExample'>"+
             "<h5 class='my-0' id='streamer-" + chanId + "'>" + data["channelInfo"]["channel"] + " <span id='status-" + chanId + 
             "' class='online octicon octicon-primitive-dot' data-toggle='tooltip' data-placement='top' title='Online'></span></h5></a>" +
-            "<small id='stream-cat-" + chanId + "' class='text-muted'>" + data["channelInfo"]["cat"] + "</small></div>" +
+            "<small id='stream-cat-" + chanId + "' class='text-muted'>" + data["channelInfo"]['platform'] + ' - ' + data["channelInfo"]["cat"] + "</small></div>" +
             "<strong class='stream-viewers' id='stream-viewers-" + chanId + "'></strong></li>" +
             "<div class='collapse' id='collapse-" + chanId + "'><ul class='list-group'>"+
                 "<li class='list-group-item d-flex justify-content-between'>" + 
@@ -687,33 +765,48 @@
         addNewDataSet(data["channelInfo"]["channel"], data);
     }
 
-    function addNewDataSet(channelName, channelInfo){
-        var color = colorKeys[config.data.datasets.length % colorKeys.length];
-        console.log("num data sets: " + config.data.datasets.length + " num colors: " + colorKeys.length);
-        var newColor = colorNames[color];
-        var newDataset = {
-            label: channelName,
-            backgroundColor: newColor,
-            borderColor: newColor,
-            data: [],
+    function createDataObj(label, color, data){
+        return {
+            label: label,
+            backgroundColor: color,
+            borderColor: color,
+            data: data,
             fill: false,
             pointRadius: 6,
             numData: 0
-        };
-        config.data.datasets.push(newDataset);
+        }
+    }
+
+    function addNewDataSet(channelName, streamData){
+        var color = colorKeys[mainLineConfig.data.datasets.length % colorKeys.length];
+        console.log("num data sets: " + mainLineConfig.data.datasets.length + " num colors: " + colorKeys.length);
+        var newColor = colorNames[color];
+        var newDataset = createDataObj(channelName, newColor, []);
+        var statDataset = createDataObj(channelName, newColor, []);
+        mainLineConfig.data.datasets.push(newDataset);
 
         viewershipHistory[channelName] = [];
-        for(var i = 0; i < config.data.datasets[0].data.length; i++){
+        for(var i = 0; i < mainLineConfig.data.datasets[0].data.length; i++){
             newDataset.data.push(null);
+            statDataset.data.push(null);
             viewershipHistory[channelName].unshift(null);
         }
-        window.myLine.update();        
+        window.myLine.update(); 
+
+        barConfig.data.labels.push(channelName);
+        barConfig.data.datasets[0].data.push(streamData['channelInfo']['totalViews']);
+        barConfig.data.datasets[1].data.push(streamData['channelInfo']['followers']);
+        window.myBar.update();   
+
+        var statsData = [];
+        statsLineConfig.data.datasets.push(statDataset);
+        streamData["index"] = statsLineConfig.data.datasets.length - 1;
     }
 
     function addCompleteDataSet(completeData){
         for(var i = 0; i < streamsList.length; i++){
             if(streams[streamsList[i]]["channelInfo"] !== null){
-                var color = colorKeys[config.data.datasets.length % colorKeys.length];
+                var color = colorKeys[mainLineConfig.data.datasets.length % colorKeys.length];
                 var newColor = colorNames[color];
                 var newDataset = {
                     label: completeData["channelInfo"]["channel"],
@@ -724,7 +817,7 @@
                     pointRadius: completeData["viewersHist"].length < 10 ? 6 : 2,
                     numData: 0
                 };
-                config.data.datasets.push(newDataset);
+                mainLineConfig.data.datasets.push(newDataset);
                 activeStreams++;
             }
         }
@@ -732,28 +825,32 @@
     }
 
     function datasetExists(label){
-        for(var i = 0; i < config.data.datasets.length; i++){
-            if(config.data.datasets[i].label === label){
+        for(var i = 0; i < mainLineConfig.data.datasets.length; i++){
+            if(mainLineConfig.data.datasets[i].label === label){
                 return true;
             }
         }
         return false;
     }
 
-    function addDataPoints(label, dataRow){
-        if (config.data.datasets.length > 0) {
-            config.data.labels.push(label);
-            for(var i = 0; i < config.data.datasets.length; i++){
-                config.data.datasets[i].data.push(dataRow[i]);
-                config.data.datasets[i].numData++;
-                if(config.data.datasets[i].numData > 20){
-                    config.data.datasets[i].pointRadius = 0;
+    function addDataPoints(dateLabel, dataRow, avgViewersData){
+        if (mainLineConfig.data.datasets.length > 0) {
+            mainLineConfig.data.labels.push(dateLabel);
+            statsLineConfig.data.labels.push(dateLabel);
+            for(var i = 0; i < mainLineConfig.data.datasets.length; i++){
+                mainLineConfig.data.datasets[i].data.push(dataRow[i]);
+                statsLineConfig.data.datasets[i].data.push(avgViewersData[i]);
+                mainLineConfig.data.datasets[i].numData++;
+                if(mainLineConfig.data.datasets[i].numData > 20){
+                    mainLineConfig.data.datasets[i].pointRadius = 0;
                 }
-                else if(config.data.datasets[i].numData > 10){
-                    config.data.datasets[i].pointRadius = 2;
+                else if(mainLineConfig.data.datasets[i].numData > 10){
+                    mainLineConfig.data.datasets[i].pointRadius = 2;
+                    statsLineConfig.data.datasets[i].pointRadius = 0;
                 }
             }
             window.myLine.update();
+            window.statLine.update();
         }
     }
 </script>

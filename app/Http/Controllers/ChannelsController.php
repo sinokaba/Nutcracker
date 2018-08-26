@@ -15,13 +15,16 @@ use Session;
 class ChannelsController extends Controller
 {
     public function index(){
-        $topAll = Cache::get('top_streams_c');
-        if($topAll === null || Cache::get('top_streams_c_prev') === null){
-            $topStreams = $this->getTopStreams(3);
-            Cache::put('top_streams_c_prev', $topStreams, 15);
-            return view('livestreams.addStream')->with('streams', $topStreams);
+        $topAll = Cache::get('top_streams');
+        if($topAll === null){
+            if(Cache::get('top_streams_c_prev') === null){
+                $topStreams = $this->getTopStreams(3);
+                Cache::put('top_streams_c_prev', $topStreams, 15);
+                return view('livestreams.addStream')->with('streams', $topStreams);
+            }
+            return view('livestreams.addStream')->with('streams', Cache::get('top_streams_c_prev'));
         }
-        return view('livestreams.addStream')->with('streams', $topAll === null ? Cache::get('top_streams_c_prev') : array_slice($topAll, 0, 6, True));
+        return view('livestreams.addStream')->with('streams', array_slice($topAll, 0, 6, True));
         //return view('livestreams.trackStreams');
     }
 
@@ -149,14 +152,14 @@ class ChannelsController extends Controller
         $topYoutube = $youtube->getTopLivestreams($num);
 
         for($i = 0; $i < $num; $i++){
-            if($topYoutube !== null){
+            if($topYoutube !== null && $i < count($topYoutube)){
                 $yt = new youtubeStream(null, $topYoutube[$i]['id']['videoId']);
                 if(!array_key_exists($yt->getChannelId(), $added) && !$yt->offline){
                     $added[$yt->getChannelId()] = $yt;
                 }
             }
             $tw = new twitchStream(null, $topTwitch[$i]['user_id']);
-            if($topTwitch !== null){
+            if($topTwitch !== null && $i < count($topTwitch)){
                 if(!array_key_exists($tw->getChannelId(), $added) && !$tw->offline){
                     $added[$tw->getChannelId()] = $tw;
                 }
@@ -171,32 +174,13 @@ class ChannelsController extends Controller
         //get hte top 50 streams from youtube and twitch
 
         $numStreams = 100;
-        
-        //$allChannels = Channel::all();
-        //$channelsFile = 'channels.txt';
-        //$handleFile = fopen($channelsFile, 'a') or die('Cannot open file:  '.$channelsFile);
-        /*
-        foreach($allChannels as $channel){
-            //fwrite($handleFile, $channel->channel_name . ' ' . $channel->channel_id . PHP_EOL);
-            array_push($addedChannels, $channel->channel_name);
-            if($channel->platform == 0){ //twitch
-                $tw = new twitchStream($channel->channel_name);
-                if(!$tw->offline){
-                    array_push($streamsToTrack, $tw);
-                }   
-            }
-            else{
-                $yt = new youtubeStream($channel->channel_id);
-                if(!$yt->offline){
-                    array_push($streamsToTrack, $yt);
-                }
-            }
-        }
-        //fclose($handleFile);
-        */
         $savefile = "stream_data.json";
         if(file_exists($savefile)){
-            $streamsToTrack = json_decode(file_get_contents($savefile));
+            $fileData = file_get_contents($savefile);
+            while($fileData === FALSE){
+                $fileData = file_get_contents($savefile);
+            }
+            $streamsToTrack = json_decode($fileData);
         }
         //push the youtube/twitch channel objects to an array for processing
         $streamsToTrack = $this->getOnlineStreams($numStreams, array());
@@ -235,7 +219,7 @@ class ChannelsController extends Controller
                         if($chan->end === null){
                             $chan->end = date('Y-m-d H:i:s', time());
                         }
-                        if($chan->tries > 2){
+                        if($chan->tries > 1){
                             if($chan->freq > 0){
                                 $avgViewership = floor($chan->totalViewership/$chan->freq);
                                 $this->storeStreamViewership($streamChanInfo[$chan->channelName], $avgViewership, $chan->peakViewership, $chan->end);
