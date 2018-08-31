@@ -84,7 +84,7 @@ class youtubeStream extends Livestream{
 
 			$data = $this->getApiResponse($this->_API['search'], $params, false, false);
 			$nextPage = $data['nextPageToken'];
-			if($data['items'] == null || count($data['items']) == 0){
+			if($data['items'] === null || count($data['items']) == 0){
 				return $allData;
 			}
 			$allData = array_merge($data['items'], $allData);

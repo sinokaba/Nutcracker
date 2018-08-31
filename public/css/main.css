@@ -327,3 +327,14 @@ a.chan-name{
         height: 30vh !important;
     }
 }
+
+.card-group {
+  display: flex;
+  justify-content: flex-start;
+  flex-flow: row wrap; 
+  align-items: stretch;
+}
+.card-group .card {
+  display: block;
+  flex-basis: 33.33%; /* change this value for each breakpoint*/
+}

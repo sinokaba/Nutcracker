@@ -127,6 +127,7 @@ class PagesController extends Controller
                 }
                 $data = array(
                     'chan' => $channel,
+                    'rank' => Stream::getRanking($channel->channel_id),
                     'streams' => $streams,
                     'streams_rev' => $past5Streams,
                     "date" => date("Y-m-d"),

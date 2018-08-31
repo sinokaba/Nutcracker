@@ -14,11 +14,13 @@ class CreateChannelsTable extends Migration
     public function up()
     {
         Schema::create('channels', function (Blueprint $table) {
-            $table->increments('id');
             $table->timestamps();
-            $table->string('channel_name');
-            $table->string('channel_id')->unique();
-            $table->integer('platform'); #0 = twitch, 1 = youtube
+            $table->string('name');
+            $table->bigInteger('total_views');
+            $table->bigInteger('followers');
+            $table->string('channel_id')->primary();
+            $table->integer('platform_id');
+            $table->integer('platform_id')->references('platform_id')->on('platforms'); #0 = twitch, 1 = youtube
             $table->datetime('creation');
             $table->integer('num_searched');
         });

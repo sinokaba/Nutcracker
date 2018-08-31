@@ -14,18 +14,14 @@ class CreateStreamsTable extends Migration
     public function up()
     {
         Schema::create('streams', function (Blueprint $table) {
-            $table->increments('id');
-            $table->integer('avg_viewers');
+            $table->increments('stream_id');
             $table->string('title');
-            $table->integer('peak_viewers');
-            $table->bigInteger('followers');
-            $table->bigInteger('total_views');
-            $table->integer('chatters');
             $table->string('channel_id');
             $table->foreign('channel_id')->references('channel_id')->on('channels');
             $table->timestamp('stream_start')->nullable();
             $table->timestamp('stream_end')->nullable();
             $table->string('category');
+            $table->string('subcategory');
         });
     }
 

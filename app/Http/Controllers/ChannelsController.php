@@ -126,7 +126,7 @@ class ChannelsController extends Controller
             $livestream->stream_start = date('Y-m-d H:i:s', $streamInfo['createdAt']); #stream creation timestamp
             $livestream->stream_end = $end === null ? date('Y-m-d H:i:s', time()) : $end; #stream end timestamp, get he current time now in utc
             $livestream->category = $streamInfo['cat'];
-            $livestream->channel_id = $streamInfo['channelId']; #$foreign key referring to channels table
+            $livestream->channel_id = $streamInfo['channelId']; #foreign key referring to channels table
             $livestream->followers = $streamInfo['followers'];
             $livestream->total_views = $streamInfo['totalViews'];
             $livestream->chatters = $streamInfo['chatters'];

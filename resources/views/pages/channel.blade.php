@@ -21,7 +21,7 @@
                     <a href="#"><h4>Status: {{ $chan->offline == true ? 'Offline' : 'Online'}}</h4></a>
                 </li>            	
                 <li>
-                    <a href="#">Rank: #1</a>
+                    <a href="#">Rank: {{ $rank }}</a>
                 </li>
                 <li>
                     <a href="#">Rating</a>
