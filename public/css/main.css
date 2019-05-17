@@ -143,10 +143,6 @@ body{
     background-color: #909090;
 }
 
-.channel-container{
-    background-color: #212529;
-}
-
 .stream-viewers{
     color: white;
 }
@@ -323,8 +319,11 @@ a.chan-name{
 }
 
 @media (max-width: 414px) {
-    #channel-stats-bar-cont{
-        height: 30vh !important;
+    #viewership-chart-container{
+        height: 40vh !important;
+    }
+    #additional-charts-container{
+        height: 75vh !important;
     }
 }
 

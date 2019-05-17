@@ -26,5 +26,4 @@ Route::get('/channel', ['as' => 'channelSearch', 'uses' => 'ChannelsController@v
 Route::get('/addStream', 'ChannelsController@addStream');
 Route::get('/trackViewership', 'ChannelsController@index');
 
-Route::resource('esportsViewers', 'EsportsController');
 ?>

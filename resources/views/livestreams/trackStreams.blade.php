@@ -93,13 +93,13 @@
         </div>
         <div class="col-md-8">
             <h3 class="border-bottom border-gray pb-2 mb-0" id="chart-title"></h3>
-            <div id="viewership-chart-container" style="position: relative; width: 100%; height: 70vh">
-                <canvas id="viewership-chart"></canvas>
+            <div id="viewership-chart-container" style="position: relative; width: 100%; height: 55vh">
+                <canvas id="viewership-chart" width="900" height="600"></canvas>
             </div>
         </div>
     </div>
     <hr class="featurette-divider">
-    <div class="row hide tracking-content" style="height: 55vh">
+    <div class="row hide tracking-content" id="additional-charts-container" style="height: 55vh">
         <div class="col-md-6">
             <canvas width="900" height="600" id="channel-stats-chart"></canvas>
         </div>
